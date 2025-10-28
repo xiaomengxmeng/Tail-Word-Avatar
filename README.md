@@ -35,7 +35,8 @@
 
 感谢以下项目和个人对本项目的帮助：
 
-1. **墨墨背单词词库** - 感谢 [https://github.com/busiyiworld/maimemo-export](https://github.com/busiyiworld/maimemo-export) 提供的词库资源
+1. **脚本原作者** - 感谢江户川-哀酱(APTX-4869)的初始脚本开发
+2. **墨墨背单词词库** - 感谢 [https://github.com/busiyiworld/maimemo-export](https://github.com/busiyiworld/maimemo-export) 提供的词库资源
 
 ## 开发说明
 
@@ -46,7 +47,13 @@
 您可以按照以下步骤更换为自定义词库：
 
 1. **准备CSV词库文件**：创建或获取包含单词数据的CSV文件，确保格式与原词库相似（通常包含单词、释义等信息）
-2. **替换原始词库**：将新的CSV词库文件重命名为`2024墨墨考研深度记忆宝典 全部单词.csv`，并替换原文件
+2. **修改文件路径**：编辑`parse_words_csv.js`文件，找到第6行附近的CSV文件路径定义，将`2024墨墨考研深度记忆宝典 全部单词.csv`修改为您的新CSV文件名
+   ```javascript
+   // 修改前
+   const csvPath = path.join(__dirname, '2024墨墨考研深度记忆宝典 全部单词.csv');
+   // 修改后
+   const csvPath = path.join(__dirname, '您的新词库文件名.csv');
+   ```
 3. **重新解析词库**：运行`parse_words_csv.js`脚本来处理新的词库数据
    ```bash
    node parse_words_csv.js
