@@ -1,0 +1,10 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="200" height="200" fill="#D3D3D3" rx="20" ry="20"/>
+  <!-- 示例文字 -->
+  <text x="100" y="120" font-family="Arial, sans-serif" font-size="40" fill="#1A365D" text-anchor="middle" font-weight="bold">示例头像</text>
+  <!-- 说明文字 -->
+  <text x="100" y="170" font-family="Arial, sans-serif" font-size="14" fill="#666666" text-anchor="middle">自定义头像效果展示</text>
+  <!-- 底部信息 -->
+  <text x="100" y="190" font-family="Arial, sans-serif" font-size="10" fill="#999999" text-anchor="middle">Tail Word Avatar</text>
+</svg>
