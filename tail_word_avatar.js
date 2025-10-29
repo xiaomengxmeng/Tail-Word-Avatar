@@ -609,7 +609,7 @@
                         let originalContent = t;
 
                         // 处理小尾巴和单词
-                        if (t.trim().length == 0 || (!suffixFlag) || needwb == 0 || t.trim().startsWith('凌 ') || t.trim().startsWith('鸽 ') || t.trim().startsWith('小冰 ') || t.trim().startsWith('点歌 ') || t.trim().startsWith('TTS ') || t.trim().startsWith('朗读 ')) {
+                        if (t.trim().length == 0 || (!suffixFlag) || needwb == 0 || t.trim().startsWith('凌 ') || t.trim().startsWith('鸽 ') || t.trim().startsWith('小冰 ')|| t.trim().startsWith('冰冰 ') || t.trim().startsWith('点歌 ') || t.trim().startsWith('TTS ') || t.trim().startsWith('朗读 ')) {
                             return originalContent;
                         } else if (wordCount === 0) {
                             return originalContent + '\n\n\n>  ' + getCurrentSuffixText();
@@ -669,7 +669,7 @@
         ice_rob.setAttribute('style', 'margin-right:5px');
         // 绑定按键点击功能
         ice_rob.onclick = function () {
-            sendMsgApi("小冰 去打劫");
+            sendMsgApi("冰冰 去打劫");
         };
 
         // 添加按钮到图层
