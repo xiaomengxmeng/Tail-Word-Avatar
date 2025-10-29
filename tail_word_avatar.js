@@ -47,9 +47,9 @@
         // 图片缩放比例
         scale: 10,
         // 背景颜色 (十六进制)
-        backgroundColor: 'D3D3D3',
+        backgroundColor: 'E8F4FF',
         // 字体颜色 (十六进制)
-        fontColor: '1A365D'
+        fontColor: '3366CC'
     };
 
     // 小尾巴选项数组
