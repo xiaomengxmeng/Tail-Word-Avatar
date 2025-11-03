@@ -43,7 +43,7 @@
         // 头像图片URL (基础背景图)
         baseImageUrl: 'https://file.fishpi.cn/2025/08/blob-3d1dec23.png',
         // 头像生成API地址
-        generateApiUrl: 'https://fishpi.cn/gen',
+        generateApiUrl: 'https://fishpi.cn/gen?ver=0.1&scale=0.79',
         // 图片缩放比例
         scale: 10,
         // 背景颜色 (十六进制)
