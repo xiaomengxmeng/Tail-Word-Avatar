@@ -689,6 +689,28 @@
             sendMsgApi(text);
         };
 
+        // Azi 按钮
+        var azi_button = document.createElement("button");
+        azi_button.id = "azi_button";
+        azi_button.textContent = "Azi";
+        azi_button.className = "red";
+        azi_button.setAttribute('style', 'margin-right:5px');
+        // 绑定按键点击功能
+        //<div id="avatarURLDom" class="avatar-big" style="background-image:url('https://file.fishpi.cn/2025/10/17605791587999f873c31-507bde29.gif?imageView2/1/w/210/h/210/interlace/0/q/100')"></div>
+        //https://fishpi.cn/gen?ver=0.1&scale=0.79&txt=%E7%93%A6%E8%BE%BE%E8%A5%BF%E7%93%A6%E6%B3%A1%E6%B3%A1%E8%8C%B6&url=https://file.fishpi.cn/2025/10/17605791587999f873c31-507bde29.gif&backcolor=E8F4FF,ffffff&fontcolor=3366CC,ffffff
+        //![](https://fishpi.cn/gen?ver=0.1&scale=0.79&txt=%E7%93%A6%E8%BE%BE%E8%A5%BF%E7%93%A6%E6%B3%A1%E6%B3%A1%E8%8C%B6&url=https://file.fishpi.cn/2025/10/17605791587999f873c31-507bde29.gif&backcolor=E8F4FF,ffffff&fontcolor=3366CC,ffffff "泡泡茶")
+        azi_button.onclick = function () {
+            const text = "Azi💜💜💜";
+            const encodedText = encodeURIComponent(text.trim());
+            //![](https://fishpi.cn/gen?ver=0.1&scale=0.79&txt=%E9%9B%B6%E7%B3%96%E5%8A%A0%E8%BE%A3&url=https://file.fishpi.cn/2025/04/9efb7eec434478a22decde86c65e6460-db4267b2.gif&backcolor=F59B95,ffffff&fontcolor=ffcdd2,ffffff "UMR·埋")
+            var url = "https://file.fishpi.cn/2025/07/紫色小仓鼠GIF表情9爱给网aigeicom-2781678a.gif";
+            var url1 = "https://file.fishpi.cn/2025/10/17605791587999f873c31-507bde29.gif";
+            // <div class="avatar" aria-label="pzjd" style="background-image:url('https://file.fishpi.cn/2025/10/17605791587999f873c31-507bde29.gif?imageView2/1/w/48/h/48/interlace/0/q/100')"></div>
+            const avatarUrl = `https://fishpi.cn/gen?ver=0.1&scale=0.79&txt=${encodedText}&url=${url}&backcolor=ffffff,E8D5FF&fontcolor=9933CC,ffffff`;
+            console.log(avatarUrl);
+            sendMsgApi(`![图片表情](${avatarUrl})`);
+        };
+
         // 昂不利波波 按钮
         var anbuli = document.createElement("button");
         anbuli.id = "anbuli";
@@ -702,6 +724,7 @@
 
         // 添加新按钮到图层
         elve.appendChild(bubble_tea);
+        elve.appendChild(azi_button);
         elve.appendChild(anbuli);
 
         // 头像生成按钮 - 仅在功能开启时创建
