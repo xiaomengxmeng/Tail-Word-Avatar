@@ -157,7 +157,7 @@
             lightningButton.className = 'red';
             lightningButton.setAttribute('style', 'margin-right:5px');
             lightningButton.onclick = function() {
-                sendMsgApi('雷公助我');
+                sendMsgApi('小斗士 雷公助我');
             };
             
             // 创建火烧连营按钮
@@ -167,7 +167,7 @@
             fireButton.className = 'red';
             fireButton.setAttribute('style', 'margin-right:5px');
             fireButton.onclick = function() {
-                sendMsgApi('火烧连营');
+                sendMsgApi('小斗士 火烧连营');
             };
             
             // 添加按钮到图层，避免重复添加
