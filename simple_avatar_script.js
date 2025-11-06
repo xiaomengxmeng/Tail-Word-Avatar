@@ -239,8 +239,19 @@
                     
                     // 检查是否处于测试模式
                     if (avatarConfig.testMode) {
-                        console.log(messageToSend);
-                        alert('测试模式已启用，消息已输出到控制台');
+                        console.log('=== 开始输出所有颜色组合 ===');
+                        // 遍历所有预设颜色组合
+                        presetColorCombinations.forEach((combination, index) => {
+                            // 为每个颜色组合生成头像URL
+                            const comboAvatarUrl = `https://fishpi.cn/gen?ver=0.1&scale=${avatarConfig.scale}&txt=${encodedText}&url=${encodedBaseImageUrl}&backcolor=${combination.backgroundColor}&fontcolor=${combination.fontColor}`;
+                            // 生成markdown格式的消息
+                            const comboMessage = `![图片表情](${comboAvatarUrl})`;
+                            // 输出到控制台
+                            console.log(`组合 ${index + 1}: ${combination.name}`);
+                            console.log(comboMessage);
+                        });
+                        console.log('=== 所有颜色组合输出完成 ===');
+                        alert('测试模式已启用，所有颜色组合已输出到控制台');
                     } else {
                         // 正常模式下发送消息
                         sendMsgApi(messageToSend);
