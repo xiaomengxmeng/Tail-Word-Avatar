@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         头像生成脚本
 // @namespace    http://tampermonkey.net/
-// @version      1.0.4
+// @version      1.0.11
 // @description  仅头像生成按钮的脚本
 // @match        https://fishpi.cn/*
 // @match        https://fishpi.cn/cr
 // @icon         https://fishpi.cn/images/favicon.png
 // @grant        GM_registerMenuCommand
+// @grant        GM_addStyle
+// @grant        unsafeWindow
 // ==/UserScript==
 
 (function () {
@@ -14,49 +16,134 @@
     
     // 预设的颜色组合
     const presetColorCombinations = [
-        { name: '紫色系', backgroundColor: 'ffffff,E8D5FF', fontColor: '9933CC,ffffff' },
-        { name: '蓝色系', backgroundColor: 'E6F7FF,BAE7FF', fontColor: '1890FF,001529' },
-        { name: '绿色系', backgroundColor: 'F6FFED,D9F7BE', fontColor: '52C41A,389E0D' },
-        { name: '红色系', backgroundColor: 'FFF1F0,FFCCC7', fontColor: 'F5222D,C41D14' },
-        { name: '黄色系', backgroundColor: 'FFFBE6,FFF1B8', fontColor: 'FAAD14,D48806' },
-        { name: '黑色系', backgroundColor: 'F5F5F5,D9D9D9', fontColor: '000000,595959' },
-        { name: '橙色系', backgroundColor: 'FFF7E6,FFD591', fontColor: 'FA8C16,D46B08' },
-        { name: '粉色系', backgroundColor: 'FFF0F6,FFADD6', fontColor: 'EB2F96,C41D7F' },
-        { name: '青色系', backgroundColor: 'E6FFFB,B5E8DF', fontColor: '13C2C2,098270' },
-        { name: '紫罗兰色', backgroundColor: 'F9F0FF,E9D7FE', fontColor: '9254DE,722ED1' },
-        { name: '金色系', backgroundColor: 'FFFBE6,FFF1B8', fontColor: 'FAAD14,CF7C1C' },
-        { name: '海蓝色系', backgroundColor: 'E8F4FD,B2DDFF', fontColor: '36CFC9,13C2C2' },
-        { name: '紫色到蓝色', backgroundColor: 'E8D5FF,E6F7FF', fontColor: '9933CC,1890FF' },
-        { name: '橙色到红色', backgroundColor: 'FFF7E6,FFF1F0', fontColor: 'FA8C16,F5222D' },
-        { name: '绿色到青色', backgroundColor: 'F6FFED,E6FFFB', fontColor: '52C41A,13C2C2' },
-        { name: '粉色到紫色', backgroundColor: 'FFF0F6,F9F0FF', fontColor: 'EB2F96,9254DE' },
-        { name: '蓝色到青色', backgroundColor: 'E6F7FF,E6FFFB', fontColor: '1890FF,13C2C2' },
-        { name: '黄色到橙色', backgroundColor: 'FFFBE6,FFF7E6', fontColor: 'FAAD14,FA8C16' }
+        { name: '优雅紫色', backgroundColor: 'ffffff,E8D5FF', fontColor: '9933CC,ffffff' },
+        { name: '清新蓝色', backgroundColor: 'E8F4FF,ffffff', fontColor: '3366CC,ffffff' },
+        { name: '自然绿色', backgroundColor: 'F0FFF4,D1FAE5', fontColor: '34D399,ffffff' },
+        { name: '温柔粉色', backgroundColor: 'FFF0F6,FFADD6', fontColor: 'BE185D,ffffff' },
+        { name: '明亮黄色', backgroundColor: 'FFFBEB,FEF3C7', fontColor: 'F59E0B,ffffff' },
+        { name: '简约黑白', backgroundColor: 'FFFFFF,F3F4F6', fontColor: '6B7280,ffffff' },
+        { name: '活力橙色', backgroundColor: 'FFF7ED,FFEDD5', fontColor: 'F97316,ffffff' },
+        { name: '梦幻紫粉', backgroundColor: 'F9F0FF,FFD6E7', fontColor: '92400E,ffffff' },
+        { name: '宁静青色', backgroundColor: 'E6FFFB,B5E8DF', fontColor: '0D9488,ffffff' },
+        { name: '浪漫紫罗兰', backgroundColor: 'F5F3FF,D8B4FE', fontColor: '7C3AED,ffffff' },
+        { name: '典雅金色', backgroundColor: 'FFFBEB,FDE68A', fontColor: 'D97706,ffffff' },
+        { name: '深海蓝色', backgroundColor: 'EFF6FF,DBEAFE', fontColor: '2563EB,ffffff' },
+        { name: '紫蓝渐变', backgroundColor: 'F3E8FF,E0E7FF', fontColor: '8B5CF6,4F46E5' },
+        { name: '橙红渐变', backgroundColor: 'FFF7ED,FFEFEF', fontColor: 'FB923C,F87171' },
+        { name: '绿青渐变', backgroundColor: 'ECFDF5,E0F2FE', fontColor: '10B981,0EA5E9' },
+        { name: '粉紫渐变', backgroundColor: 'FCE7F3,EDE9FE', fontColor: 'EC4899,8B5CF6' },
+        { name: '蓝青渐变', backgroundColor: 'E0F2FE,ECFEFF', fontColor: '3B82F6,0EA5E9' },
+        { name: '黄橙渐变', backgroundColor: 'FEF9C3,FDE68A', fontColor: 'FACC15,F97316' },
+        { name: '淡紫渐变', backgroundColor: 'F5F3FF,E9D5FF', fontColor: 'A855F7,ffffff' },
+        { name: '薄荷绿', backgroundColor: 'DCFCE7,BBF7D0', fontColor: '22C55E,ffffff' },
+        { name: '珊瑚粉', backgroundColor: 'FFECF0,FFD1DA', fontColor: 'EC4899,ffffff' },
+        { name: '天蓝渐变', backgroundColor: 'EFF6FF,DBEAFE', fontColor: '60A5FA,ffffff' },
+        { name: '薰衣草紫', backgroundColor: 'F8FAFC,E2E8F0', fontColor: '818CF8,ffffff' },
+        { name: '抹茶绿', backgroundColor: 'F0FDF4,D9F99D', fontColor: '4ADE80,ffffff' },
+        { name: '暖橙色', backgroundColor: 'FFFAF0,FFEDCC', fontColor: 'F59E0B,ffffff' },
+        { name: '海洋蓝', backgroundColor: 'EFF6FF,DBEAFE', fontColor: '3B82F6,ffffff' },
+        { name: '阳光黄', backgroundColor: 'FEF9C3,FDE68A', fontColor: 'FACC15,ffffff' },
+        { name: '高级灰', backgroundColor: 'F8FAFC,E2E8F0', fontColor: '6B7280,ffffff' },
+        { name: '紫蓝混色', backgroundColor: 'EDE9FE,DBEAFE', fontColor: '8B5CF6,60A5FA' },
+        { name: '樱花粉', backgroundColor: 'FCE7F3,FFD1DA', fontColor: 'EC4899,ffffff' },
+        { name: '薄荷青', backgroundColor: 'DCFCE7,DBEAFE', fontColor: '10B981,3B82F6' },
+        { name: '蜜黄色', backgroundColor: 'FEF9C3,FDE68A', fontColor: 'FBBF24,ffffff' },
+        { name: '橙蓝撞色', backgroundColor: 'FFEDCC,DBEAFE', fontColor: 'F97316,3B82F6' },
+        { name: '黄粉渐变', backgroundColor: 'FEF9C3,FCE7F3', fontColor: 'FACC15,EC4899' },
+        { name: '淡雅灰', backgroundColor: 'F8FAFC,E5E7EB', fontColor: '9CA3AF,ffffff' },
+        { name: '橙紫渐变', backgroundColor: 'FFEDCC,EDE9FE', fontColor: 'FB923C,8B5CF6' },
+        { name: '梦幻粉紫', backgroundColor: 'FCE7F3,EDE9FE', fontColor: 'EC4899,8B5CF6' },
+        { name: '清新紫绿', backgroundColor: 'EDE9FE,D1FAE5', fontColor: '8B5CF6,34D399' },
+        { name: '绿橙渐变', backgroundColor: 'D1FAE5,FFEDCC', fontColor: '34D399,FB923C' },
+        { name: '金色渐变', backgroundColor: 'FEF9C3,FDE68A', fontColor: 'F59E0B,ffffff' }
     ];
     
     // 从localStorage加载配置，如果没有则使用默认配置
     function loadConfig() {
         const savedConfig = localStorage.getItem('avatarGeneratorConfig');
+        const defaultConfig = {
+            defaultText: '不想桀桀桀',
+            generateApiUrl: 'https://fishpi.cn/gen?ver=0.1&scale=1.5',
+            backgroundColor: 'ffffff,E8D5FF',
+            fontColor: '9933CC,ffffff',
+            baseImageUrl: '',
+            scale: 0.79, // 默认缩放比例
+            testMode: true // 默认启用测试模式
+        };
+        
         if (savedConfig) {
             try {
-                return JSON.parse(savedConfig);
+                const parsedConfig = JSON.parse(savedConfig);
+                // 确保testMode属性存在，合并配置
+                return {
+                    ...defaultConfig,
+                    ...parsedConfig
+                };
             } catch (e) {
                 console.error('解析保存的配置失败:', e);
             }
         }
-        // 默认配置
-        return {
-            defaultText: '不想桀桀桀',
-            generateApiUrl: 'https://fishpi.cn/gen?ver=0.1&scale=0.79',
-            backgroundColor: 'ffffff,E8D5FF',
-            fontColor: '9933CC,ffffff',
-            baseImageUrl: 'https://file.fishpi.cn/2025/08/blob-3d1dec23.png'
-        };
+        // 返回默认配置
+        return defaultConfig;
     }
     
     // 保存配置到localStorage
     function saveConfig(config) {
         localStorage.setItem('avatarGeneratorConfig', JSON.stringify(config));
+    }
+    
+    // 获取用户鱼排头像URL
+    function getUserAvatarUrl() {
+        try {
+            // 尝试多种选择器来获取头像元素
+            const selectors = [
+                "#aPersonListPanel > span",  // 用户提供的选择器
+                ".avatar-small",             // 直接查找avatar-small类
+                "/html/body/div[2]/div[2]/a[6]/span" // 用户提供的XPath选择器对应的CSS选择器
+            ];
+            
+            let avatarElement = null;
+            // 尝试每个选择器直到找到头像元素
+            for (const selector of selectors) {
+                avatarElement = document.querySelector(selector);
+                if (avatarElement && avatarElement.style.backgroundImage) {
+                    break;
+                }
+            }
+            
+            // 如果找到了有backgroundImage的元素
+            if (avatarElement && avatarElement.style.backgroundImage) {
+                // 从backgroundImage中提取URL
+                const backgroundImage = avatarElement.style.backgroundImage;
+                // 匹配URL部分，考虑单引号和双引号
+                const urlMatch = backgroundImage.match(/url\(['"](.+?)['"]\)/);
+                if (urlMatch && urlMatch[1]) {
+                    // 移除可能的参数部分，保留原始图片URL
+                    let cleanUrl = urlMatch[1];
+                    // 如果URL包含imageView2参数，则移除
+                    const paramIndex = cleanUrl.indexOf('?imageView2');
+                    if (paramIndex !== -1) {
+                        cleanUrl = cleanUrl.substring(0, paramIndex);
+                    }
+                    console.log('成功获取头像URL:', cleanUrl);
+                    return cleanUrl;
+                }
+            } else {
+                console.log('未找到带有backgroundImage的头像元素');
+                // 输出所有找到的元素进行调试
+                selectors.forEach(selector => {
+                    const el = document.querySelector(selector);
+                    if (el) {
+                        console.log(`找到元素 ${selector}:`, el, 'backgroundImage:', el.style.backgroundImage);
+                    } else {
+                        console.log(`未找到元素 ${selector}`);
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('获取用户头像URL失败:', e);
+        }
+        return null;
     }
     
     // 头像生成配置
@@ -133,11 +220,35 @@
             avatarGenButton.className = 'red';
             avatarGenButton.setAttribute('style', 'margin-right:5px');
             avatarGenButton.onclick = function() {
-                const customText = prompt("请输入头像上显示的文字：", avatarConfig.defaultText);
-                const textToUse = customText === null || customText.trim() === '' ? avatarConfig.defaultText : customText.trim();
-                const encodedText = encodeURIComponent(textToUse);
-                const avatarUrl = `https://fishpi.cn/gen?ver=0.1&scale=0.79&txt=${encodedText}&url=${avatarConfig.baseImageUrl}&backcolor=${avatarConfig.backgroundColor}&fontcolor=${avatarConfig.fontColor}`;
-                sendMsgApi(`![图片表情](${avatarUrl})`);
+                try {
+                    const customText = prompt("请输入头像上显示的文字：", avatarConfig.defaultText);
+                    const textToUse = customText === null || customText.trim() === '' ? avatarConfig.defaultText : customText.trim();
+                    const encodedText = encodeURIComponent(textToUse);
+                    // 确保头像URL被正确编码
+                    const encodedBaseImageUrl = encodeURIComponent(avatarConfig.baseImageUrl);
+                    // 构建头像生成URL，使用配置中的缩放比例
+                    const avatarUrl = `https://fishpi.cn/gen?ver=0.1&scale=${avatarConfig.scale}&txt=${encodedText}&url=${encodedBaseImageUrl}&backcolor=${avatarConfig.backgroundColor}&fontcolor=${avatarConfig.fontColor}`;
+                    console.log('生成的头像URL:', avatarUrl);
+                    
+                    // 可选：添加简单的URL验证
+                    if (avatarUrl.length > 2000) {
+                        alert('警告：生成的URL过长，可能会导致问题');
+                    }
+                    
+                    const messageToSend = `![图片表情](${avatarUrl})`;
+                    
+                    // 检查是否处于测试模式
+                    if (avatarConfig.testMode) {
+                        console.log(messageToSend);
+                        alert('测试模式已启用，消息已输出到控制台');
+                    } else {
+                        // 正常模式下发送消息
+                        sendMsgApi(messageToSend);
+                    }
+                } catch (e) {
+                    console.error('生成头像时出错:', e);
+                    alert('生成头像时出错，请查看控制台日志');
+                }
             };
             
             // 创建冰冰来个红包按钮
@@ -185,6 +296,17 @@
 
     // 初始化函数
     function init() {
+        // 尝试获取用户的鱼排头像URL
+        const userAvatarUrl = getUserAvatarUrl();
+        if (userAvatarUrl) {
+            // 如果成功获取头像URL，则更新配置
+            avatarConfig.baseImageUrl = userAvatarUrl;
+            saveConfig(avatarConfig);
+            console.log('已从用户头像更新baseImageUrl:', userAvatarUrl);
+        } else {
+            console.log('未能获取用户头像URL，使用现有配置');
+        }
+        
         createButtons();
         
         // 等待WebSocket连接建立后重试
@@ -255,11 +377,12 @@
             
             // 颜色预览
             const preview = document.createElement('div');
+            const gradientStyle = `linear-gradient(45deg, #${combo.backgroundColor.split(',')[0]}, #${combo.backgroundColor.split(',')[1]})`;
             preview.style.cssText = `
                 width: 60px;
                 height: 30px;
                 margin-right: 10px;
-                background: linear-gradient(45deg, #${combo.backgroundColor.split(',')[0]}, #${combo.backgroundColor.split(',')[1]});
+                background: ${gradientStyle};
                 border-radius: 4px;
                 position: relative;
             `;
@@ -291,6 +414,8 @@
             option.onclick = () => {
                 avatarConfig.backgroundColor = combo.backgroundColor;
                 avatarConfig.fontColor = combo.fontColor;
+                // 移除可能存在的gradient属性以保持一致性
+                delete avatarConfig.gradient;
                 saveConfig(avatarConfig);
                 alert(`已选择${combo.name}颜色组合！`);
                 document.body.removeChild(panel);
@@ -329,9 +454,288 @@
         }
     }
     
+    // 设置头像缩放比例
+    function setAvatarScale() {
+        // 创建面板容器
+        const panel = document.createElement('div');
+        panel.id = 'avatarScalePanel';
+        panel.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            opacity: 0;
+            background: white;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 24px;
+            z-index: 9999;
+            width: 320px;
+            box-shadow: 0 6px 16px 0 rgba(0,0,0,0.08), 0 3px 6px -4px rgba(0,0,0,0.12), 0 9px 28px 8px rgba(0,0,0,0.05);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+        `;
+        
+        // 面板标题
+        const title = document.createElement('h3');
+        title.textContent = '设置头像大小';
+        title.style.marginTop = '0';
+        title.style.marginBottom = '20px';
+        title.style.textAlign = 'center';
+        title.style.fontSize = '18px';
+        title.style.fontWeight = '600';
+        title.style.color = 'rgba(0, 0, 0, 0.85)';
+        panel.appendChild(title);
+        
+        // 创建滑块容器
+        const sliderContainer = document.createElement('div');
+        sliderContainer.style.marginBottom = '24px';
+        panel.appendChild(sliderContainer);
+        
+        // 滑块范围标签
+        const rangeLabel = document.createElement('div');
+        rangeLabel.style.display = 'flex';
+        rangeLabel.style.justifyContent = 'space-between';
+        rangeLabel.style.marginBottom = '8px';
+        rangeLabel.style.fontSize = '12px';
+        rangeLabel.style.color = 'rgba(0, 0, 0, 0.5)';
+        rangeLabel.innerHTML = '<span>0.5</span><span>5.0</span>';
+        sliderContainer.appendChild(rangeLabel);
+        
+        // 创建滑块
+        const scaleSlider = document.createElement('input');
+        scaleSlider.type = 'range';
+        scaleSlider.min = '5';
+        scaleSlider.max = '50';
+        scaleSlider.step = '1';
+        scaleSlider.value = Math.round(avatarConfig.scale * 10); // 乘以10转换为整数，以便于0.1步长控制
+        scaleSlider.style.cssText = `
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #f0f0f0;
+            outline: none;
+            -webkit-appearance: none;
+            margin-bottom: 12px;
+        `;
+        
+        // 美化滑块（WebKit浏览器）
+        scaleSlider.style.WebkitAppearance = 'none';
+        scaleSlider.style.background = 'linear-gradient(to right, #1890ff 0%, #1890ff ' + 
+            ((scaleSlider.value - scaleSlider.min) / (scaleSlider.max - scaleSlider.min) * 100) + '%, #f0f0f0 ' + 
+            ((scaleSlider.value - scaleSlider.min) / (scaleSlider.max - scaleSlider.min) * 100) + '%, #f0f0f0 100%)';
+        
+        sliderContainer.appendChild(scaleSlider);
+        
+        // 创建当前值显示
+        const valueDisplay = document.createElement('div');
+        valueDisplay.style.textAlign = 'center';
+        valueDisplay.style.fontSize = '16px';
+        valueDisplay.style.fontWeight = '600';
+        valueDisplay.style.color = '#1890ff';
+        valueDisplay.textContent = (scaleSlider.value / 10).toFixed(1);
+        sliderContainer.appendChild(valueDisplay);
+        
+        // 添加缩放预览
+        const previewContainer = document.createElement('div');
+        previewContainer.style.textAlign = 'center';
+        previewContainer.style.marginBottom = '24px';
+        panel.appendChild(previewContainer);
+        
+        const previewLabel = document.createElement('p');
+        previewLabel.textContent = '预览效果';
+        previewLabel.style.marginBottom = '12px';
+        previewLabel.style.fontSize = '14px';
+        previewLabel.style.color = 'rgba(0, 0, 0, 0.65)';
+        previewContainer.appendChild(previewLabel);
+        
+        const previewBox = document.createElement('div');
+        previewBox.style.display = 'flex';
+        previewBox.style.justifyContent = 'center';
+        previewBox.style.alignItems = 'center';
+        previewContainer.appendChild(previewBox);
+        
+        // 创建可动态更新的预览点
+        const dynamicDot = document.createElement('div');
+        const initialSize = 12 * (scaleSlider.value / 10) + 'px';
+        dynamicDot.style.cssText = `
+            width: ${initialSize};
+            height: ${initialSize};
+            border-radius: 50%;
+            background: #1890ff;
+            transition: all 0.1s ease;
+        `;
+        previewBox.appendChild(dynamicDot);
+        
+        // 滑块变化事件
+        scaleSlider.addEventListener('input', function() {
+            const currentScale = (this.value / 10).toFixed(1);
+            valueDisplay.textContent = currentScale;
+            
+            // 更新滑块背景渐变
+            const percent = ((this.value - this.min) / (this.max - this.min) * 100);
+            this.style.background = 'linear-gradient(to right, #1890ff 0%, #1890ff ' + 
+                percent + '%, #f0f0f0 ' + percent + '%, #f0f0f0 100%)';
+            
+            // 更新预览点大小
+            const dotSize = 12 * (this.value / 10) + 'px';
+            dynamicDot.style.width = dotSize;
+            dynamicDot.style.height = dotSize;
+        });
+        
+        // 按钮容器
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.justifyContent = 'flex-end';
+        buttonContainer.style.gap = '8px';
+        panel.appendChild(buttonContainer);
+        
+        // 取消按钮
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = '取消';
+        cancelBtn.style.cssText = `
+            padding: 6px 16px;
+            background: white;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            color: rgba(0, 0, 0, 0.65);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        `;
+        
+        cancelBtn.onclick = function() {
+            panel.style.transform = 'translate(-50%, -50%) scale(0.9)';
+            panel.style.opacity = '0';
+            setTimeout(() => {
+                document.body.removeChild(panel);
+            }, 300);
+        };
+        
+        cancelBtn.onmouseover = function() {
+            cancelBtn.style.borderColor = '#40a9ff';
+            cancelBtn.style.color = '#40a9ff';
+        };
+        
+        cancelBtn.onmouseout = function() {
+            cancelBtn.style.borderColor = '#d9d9d9';
+            cancelBtn.style.color = 'rgba(0, 0, 0, 0.65)';
+        };
+        
+        buttonContainer.appendChild(cancelBtn);
+        
+        // 确认按钮
+        const confirmBtn = document.createElement('button');
+        confirmBtn.textContent = '确认';
+        confirmBtn.style.cssText = `
+            padding: 6px 16px;
+            background: #1890ff;
+            border: 1px solid #1890ff;
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        `;
+        
+        confirmBtn.onclick = function() {
+            const selectedScale = parseFloat((scaleSlider.value / 10).toFixed(1));
+            if (!isNaN(selectedScale)) {
+                avatarConfig.scale = selectedScale;
+                saveConfig(avatarConfig);
+                
+                // 显示成功提示
+                const successMsg = document.createElement('div');
+                successMsg.textContent = `头像大小已设置为 ${selectedScale}`;
+                successMsg.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: #52c41a;
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    z-index: 10000;
+                    font-size: 14px;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                `;
+                document.body.appendChild(successMsg);
+                
+                setTimeout(() => {
+                    successMsg.style.opacity = '1';
+                }, 10);
+                
+                setTimeout(() => {
+                    successMsg.style.opacity = '0';
+                    setTimeout(() => {
+                        document.body.removeChild(successMsg);
+                    }, 300);
+                }, 2000);
+            }
+            
+            // 关闭面板
+            panel.style.transform = 'translate(-50%, -50%) scale(0.9)';
+            panel.style.opacity = '0';
+            setTimeout(() => {
+                document.body.removeChild(panel);
+            }, 300);
+        };
+        
+        confirmBtn.onmouseover = function() {
+            confirmBtn.style.background = '#40a9ff';
+            confirmBtn.style.borderColor = '#40a9ff';
+        };
+        
+        confirmBtn.onmouseout = function() {
+            confirmBtn.style.background = '#1890ff';
+            confirmBtn.style.borderColor = '#1890ff';
+        };
+        
+        buttonContainer.appendChild(confirmBtn);
+        
+        // 添加到页面
+        document.body.appendChild(panel);
+        
+        // 添加显示动画
+        setTimeout(() => {
+            panel.style.transform = 'translate(-50%, -50%) scale(1)';
+            panel.style.opacity = '1';
+        }, 10);
+    }
+    
+    // 重置为用户自己的头像
+    function resetToUserAvatar() {
+        try {
+            const userAvatarUrl = getUserAvatarUrl();
+            if (userAvatarUrl) {
+                avatarConfig.baseImageUrl = userAvatarUrl;
+                saveConfig(avatarConfig);
+                alert('已成功重置为您的鱼排头像！');
+            } else {
+                alert('未能获取您的鱼排头像，请稍后再试！');
+            }
+        } catch (e) {
+            console.error('重置头像时出错:', e);
+            alert('重置头像时出错，请查看控制台日志');
+        }
+    }
+    
+    // 切换测试模式
+    function toggleTestMode() {
+        avatarConfig.testMode = !avatarConfig.testMode;
+        saveConfig(avatarConfig);
+        const modeText = avatarConfig.testMode ? '已启用' : '已禁用';
+        alert(`测试模式${modeText}！${avatarConfig.testMode ? 'Test按钮的消息将只输出到控制台' : 'Test按钮的消息将正常发送'}`);
+    }
+    
     // 注册油猴菜单
     GM_registerMenuCommand('设置头像背景URL', setAvatarUrl);
     GM_registerMenuCommand('选择头像颜色组合', createColorSelectionPanel);
+    GM_registerMenuCommand('设置头像大小', setAvatarScale);
+    GM_registerMenuCommand('重置为我的鱼排头像', resetToUserAvatar);
+    GM_registerMenuCommand('切换测试模式', toggleTestMode);
     
     // 当页面加载完成时初始化
     if (document.readyState === 'loading') {
