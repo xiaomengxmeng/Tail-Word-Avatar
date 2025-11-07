@@ -11,7 +11,9 @@
 - 支持自定义头像文字内容
 - 支持配置背景图片、颜色和字体颜色
 - 通过油猴菜单支持动态修改头像背景URL
-- 提供18种预设渐变颜色组合供选择
+- 提供41种预设渐变颜色组合供选择
+- 支持测试模式，可以一次性查看所有颜色组合效果而不发送消息
+- 支持自定义头像大小，通过滑块灵活调整从0.5到5.0的缩放比例
 
 ### 2. 快捷聊天按钮
 - 提供6个快捷聊天按钮，分别为：
@@ -39,10 +41,12 @@
 const defaultConfig = {
     // 默认头像文字
     defaultText: '不想桀桀桀',
-    generateApiUrl: 'https://fishpi.cn/gen?ver=0.1&scale=0.79',
+    generateApiUrl: 'https://fishpi.cn/gen?ver=0.1&scale=1.5',
     backgroundColor: 'ffffff,E8D5FF',
     fontColor: '9933CC,ffffff',
-    baseImageUrl: 'https://file.fishpi.cn/2025/08/blob-3d1dec23.png'
+    baseImageUrl: '',
+    scale: 0.79, // 默认缩放比例
+    testMode: true // 默认启用测试模式
 };
 ```
 
@@ -51,6 +55,8 @@ const defaultConfig = {
 - **backgroundColor**: 头像背景颜色（十六进制值，支持渐变色）
 - **fontColor**: 头像文字颜色（十六进制值，支持渐变色）
 - **baseImageUrl**: 头像背景图片URL
+- **scale**: 头像缩放比例，控制头像的大小和清晰度，范围0.5-5.0，默认0.79
+- **testMode**: 测试模式开关，启用时点击Test按钮会在控制台输出所有颜色组合而不发送消息
 
 > 注意：现在配置会自动保存到浏览器的localStorage中，用户通过油猴菜单进行的设置将在页面刷新后保留
 
@@ -61,6 +67,15 @@ const defaultConfig = {
 3. 在聊天输入框上方将自动显示6个红色按钮
 4. 点击**Test**按钮可打开头像生成对话框，输入自定义文字
 5. 点击其他按钮可快速发送对应消息
+
+### 调整头像大小
+1. 点击浏览器工具栏中的油猴图标
+2. 选择「设置头像大小」选项
+3. 在弹出的面板中，拖动滑块调整头像大小（范围：0.5-5.0）
+4. 实时预览框会显示调整效果
+5. 点击「确认」保存设置，或点击「取消」放弃更改
+![头像大小设置](img/头像大小设置.png.png)
+> 注意：头像大小设置会自动保存到浏览器的localStorage中，页面刷新后设置不会丢失
 
 ## 代码结构
 

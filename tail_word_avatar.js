@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         鱼派单词头像功能集
 // @namespace    http://tampermonkey.net/
-// @version      1.0.0
+// @version      1.0.1
 // @description  整合单词功能和头像生成功能的精简版脚本   try to thank APTX-4869!
 // @author       (江户川-哀酱)APTX-4869
 // @match        https://fishpi.cn/*
@@ -12,7 +12,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.0";
+    const version_us = "v1.0.1";
 
     // 小尾巴开关状态
     var suffixFlag = window.localStorage['xwb_flag'] ? JSON.parse(window.localStorage['xwb_flag']) : true;
@@ -97,13 +97,18 @@
         return selectedWords;
     }
 
-    // 定义单词面板背景样式数组
+    // 定义单词面板背景样式数组 - 优化版
     const wordPanelStyles = [
         { id: 'style1', name: '默认主题', backgroundColor: '#f8f9fa', borderColor: '#dee2e6', textColor: '#212529' },
         { id: 'style2', name: '暗黑主题', backgroundColor: '#343a40', borderColor: '#495057', textColor: '#f8f9fa' },
         { id: 'style3', name: '海洋主题', backgroundColor: '#e3f2fd', borderColor: '#90caf9', textColor: '#1565c0' },
         { id: 'style4', name: '森林主题', backgroundColor: '#e8f5e9', borderColor: '#a5d6a7', textColor: '#2e7d32' },
-        { id: 'style5', name: '晚霞主题', backgroundColor: '#fff3e0', borderColor: '#ffcc80', textColor: '#e65100' }
+        { id: 'style5', name: '晚霞主题', backgroundColor: '#fff3e0', borderColor: '#ffcc80', textColor: '#e65100' },
+        { id: 'style6', name: '优雅紫色', backgroundColor: '#f3e5f5', borderColor: '#ce93d8', textColor: '#4a148c' },
+        { id: 'style7', name: '清新薄荷', backgroundColor: '#e0f2f1', borderColor: '#80deea', textColor: '#00796b' },
+        { id: 'style8', name: '科技蓝', backgroundColor: '#e1f5fe', borderColor: '#4fc3f7', textColor: '#0277bd' },
+        { id: 'style9', name: '温暖橙色', backgroundColor: '#fff8e1', borderColor: '#ffd54f', textColor: '#ef6c00' },
+        { id: 'style10', name: '梦幻粉色', backgroundColor: '#fce4ec', borderColor: '#f8bbd0', textColor: '#c2185b' }
     ];
 
     // 获取当前样式索引
@@ -637,117 +642,7 @@
             }))
     };
 
-    // 添加快捷消息按钮
-    // 获取列表
-    var x = document.getElementsByClassName('reply')[0];
-    if (x) {
-        // 创建 div 图层
-        var elve = document.getElementById("elves");
-        if (!elve) {
-            elve = document.createElement("div");
-            elve.id = "elves";
-            elve.align = "right";
-            x.appendChild(elve);
-        }
-
-        // 鸽 行行好吧 按钮
-        var ge_ok = document.createElement("button");
-        ge_ok.id = "ge_ok";
-        ge_ok.textContent = "鸽 行行好吧";
-        ge_ok.className = "red";
-        ge_ok.setAttribute('style', 'margin-right:5px');
-        // 绑定按键点击功能
-        ge_ok.onclick = function () {
-            sendMsgApi("鸽 行行好吧");
-        };
-
-        // 小冰 去打劫 按钮
-        var ice_rob = document.createElement("button");
-        ice_rob.id = "ice_rob";
-        ice_rob.textContent = "小冰 打劫";
-        ice_rob.className = "red";
-        ice_rob.setAttribute('style', 'margin-right:5px');
-        // 绑定按键点击功能
-        ice_rob.onclick = function () {
-            sendMsgApi("冰冰 去打劫");
-        };
-
-        // 添加按钮到图层
-        elve.appendChild(ge_ok);
-        elve.appendChild(ice_rob);
-
-        // 瓦达西瓦泡泡茶 按钮
-        var bubble_tea = document.createElement("button");
-        bubble_tea.id = "bubble_tea";
-        bubble_tea.textContent = "瓦达西瓦泡泡茶";
-        bubble_tea.className = "red";
-        bubble_tea.setAttribute('style', 'margin-right:5px');
-        // 绑定按键点击功能
-        bubble_tea.onclick = function () {
-            const text = "瓦达西瓦泡泡茶";
-            const encodedText = encodeURIComponent(text.trim());
-            sendMsgApi(text);
-        };
-
-        // Azi 按钮
-        var azi_button = document.createElement("button");
-        azi_button.id = "azi_button";
-        azi_button.textContent = "Azi";
-        azi_button.className = "red";
-        azi_button.setAttribute('style', 'margin-right:5px');
-        // 绑定按键点击功能
-        //<div id="avatarURLDom" class="avatar-big" style="background-image:url('https://file.fishpi.cn/2025/10/17605791587999f873c31-507bde29.gif?imageView2/1/w/210/h/210/interlace/0/q/100')"></div>
-        //https://fishpi.cn/gen?ver=0.1&scale=0.79&txt=%E7%93%A6%E8%BE%BE%E8%A5%BF%E7%93%A6%E6%B3%A1%E6%B3%A1%E8%8C%B6&url=https://file.fishpi.cn/2025/10/17605791587999f873c31-507bde29.gif&backcolor=E8F4FF,ffffff&fontcolor=3366CC,ffffff
-        //![](https://fishpi.cn/gen?ver=0.1&scale=0.79&txt=%E7%93%A6%E8%BE%BE%E8%A5%BF%E7%93%A6%E6%B3%A1%E6%B3%A1%E8%8C%B6&url=https://file.fishpi.cn/2025/10/17605791587999f873c31-507bde29.gif&backcolor=E8F4FF,ffffff&fontcolor=3366CC,ffffff "泡泡茶")
-        azi_button.onclick = function () {
-            const text = "Azi💜💜💜";
-            const encodedText = encodeURIComponent(text.trim());
-            //![](https://fishpi.cn/gen?ver=0.1&scale=0.79&txt=%E9%9B%B6%E7%B3%96%E5%8A%A0%E8%BE%A3&url=https://file.fishpi.cn/2025/04/9efb7eec434478a22decde86c65e6460-db4267b2.gif&backcolor=F59B95,ffffff&fontcolor=ffcdd2,ffffff "UMR·埋")
-            var url = "https://file.fishpi.cn/2025/07/紫色小仓鼠GIF表情9爱给网aigeicom-2781678a.gif";
-            var url1 = "https://file.fishpi.cn/2025/10/17605791587999f873c31-507bde29.gif";
-            // <div class="avatar" aria-label="pzjd" style="background-image:url('https://file.fishpi.cn/2025/10/17605791587999f873c31-507bde29.gif?imageView2/1/w/48/h/48/interlace/0/q/100')"></div>
-            const avatarUrl = `https://fishpi.cn/gen?ver=0.1&scale=0.79&txt=${encodedText}&url=${url}&backcolor=ffffff,E8D5FF&fontcolor=9933CC,ffffff`;
-            console.log(avatarUrl);
-            sendMsgApi(`![图片表情](${avatarUrl})`);
-        };
-
-        // 昂不利波波 按钮
-        var anbuli = document.createElement("button");
-        anbuli.id = "anbuli";
-        anbuli.textContent = "昂不利波波";
-        anbuli.className = "red";
-        anbuli.setAttribute('style', 'margin-right:5px');
-        // 绑定按键点击功能
-        anbuli.onclick = function () {
-            sendMsgApi("昂不利波波");
-        };
-
-        // 添加新按钮到图层
-        elve.appendChild(bubble_tea);
-        elve.appendChild(azi_button);
-        elve.appendChild(anbuli);
-
-        // 头像生成按钮 - 仅在功能开启时创建
-        if (avatarGenFlag) {
-            var avatar_gen = document.createElement("button");
-            avatar_gen.id = "avatar_gen";
-            avatar_gen.textContent = "生成自定义头像";
-            avatar_gen.className = "red";
-            avatar_gen.setAttribute('style', 'margin-right:5px');
-            // 绑定按键点击功能
-            avatar_gen.onclick = function () {
-                const customText = prompt("请输入头像上显示的文字：", avatarConfig.defaultText);
-                if (customText !== null && customText.trim() !== "") {
-                    const encodedText = encodeURIComponent(customText.trim());
-                    const avatarUrl = `${avatarConfig.generateApiUrl}?scale=${avatarConfig.scale}&txt=${encodedText}&url=${encodeURIComponent(avatarConfig.baseImageUrl)}&backcolor=${avatarConfig.backgroundColor}&fontcolor=${avatarConfig.fontColor}`;
-                    sendMsgApi(`![图片表情](${avatarUrl})`);
-                }
-            };
-
-            // 添加按钮到图层
-            elve.appendChild(avatar_gen);
-        }
-    }
+    // 单词面板优化：移除了快捷消息按钮，专注于单词学习功能
 
     // 隐藏可能阻挡单词显示的机器人按钮或相关元素
     function hideRobotElements() {
