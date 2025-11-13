@@ -1,0 +1,69 @@
+{
+  "version": "v1.1.0",
+  "exportDate": "2025-11-13T09:59:49.883Z",
+  "buttons": [
+    {
+      "id": "default-bingbing",
+      "textContent": "打劫",
+      "message": "冰冰 去打劫",
+      "className": "red",
+      "count": 0
+    },
+    {
+      "id": "default-ge",
+      "textContent": "鸽",
+      "message": "鸽 行行好吧",
+      "className": "red",
+      "count": 0
+    },
+    {
+      "id": "custom-button-1762952445061-808",
+      "textContent": "烟花",
+      "message": "~ 烟花雨",
+      "className": "blue",
+      "count": 0
+    },
+    {
+      "id": "custom-button-1762996920112-788",
+      "textContent": "查询积分",
+      "message": "小斗士 查询积分",
+      "className": "red",
+      "count": 0
+    },
+    {
+      "id": "custom-button-1762997298111-999",
+      "textContent": "小斗士 签到",
+      "message": "小斗士 签到",
+      "className": "gray",
+      "count": 0
+    },
+    {
+      "id": "custom-button-1762998196512-194",
+      "textContent": "桀桀桀",
+      "message": "![图片表情](https://fishpi.cn/gen?scale=0.9&txt=%E6%A1%80%E6%A1%80%E6%A1%80&url=https://file.fishpi.cn/2025/07/blob-6aa9f9ef.png&backcolor=dcdcdc&fontcolor=6B238E)",
+      "className": "gray",
+      "count": 0
+    },
+    {
+      "id": "custom-button-1762998441440-275",
+      "textContent": "烟花报告",
+      "message": "~ 烟花报告",
+      "className": "red",
+      "count": 0
+    },
+    {
+      "id": "custom-button-1762999498904-621",
+      "textContent": "Ciallo",
+      "message": "Ciallo～(∠・ω< )⌒☆ 𝑪𝒊𝒂𝒍𝒍𝒐～(∠・ω< )⌒☆ 𝓒𝓲𝓪𝓵𝓵𝓸～(∠・ω< )⌒☆ 𝐂𝐢𝐚𝐥𝐥𝐨～(∠・ω< )⌒☆ ℂ𝕚𝕒𝕝𝕝𝕠～(∠・ω< )⌒☆ 𝘊𝘪𝘢𝘭𝘭𝘰～(∠・ω< )⌒☆ 𝗖𝗶𝗮𝗹𝗹𝗼～(∠・ω< )⌒☆ 𝙲𝚒𝚊𝚕𝚕𝚘～(∠・ω< )⌒☆ ᴄɪᴀʟʟᴏ～(∠・ω< )⌒☆ 𝕮𝖎𝖆𝖑𝖑𝖔～(∠・ω< )⌒☆ ℭ𝔦𝔞𝔩𝔩𝔬～(∠・ω< )⌒☆ ᶜⁱᵃˡˡᵒ～(∠・ω< )⌒☆ ᑕ⫯Ꭿ𝘭𝘭𝖮～(∠・ω< )⌒☆ ☆⌒( >ω・∠)～ollɐıɔ",
+      "className": "orange",
+      "count": 0
+    },
+    {
+      "id": "custom-button-1763018510538-408",
+      "textContent": "小斗士发言",
+      "message": "小斗士 我的发言数",
+      "className": "red",
+      "count": 0
+    }
+  ]
+}

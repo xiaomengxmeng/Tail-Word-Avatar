@@ -10,17 +10,19 @@
 // @grant        GM_registerMenuCommand
 // @grant        GM_addStyle
 // @grant        unsafeWindow
+
+
 // ==/UserScript==
 
 (function () {
     'use strict';
-    const version_us = "v1.0.5";
-    // 按钮数据结构：{id, textContent, message, className}
+    const version_us = "v1.1.0";
+    // 按钮数据结构：{id, textContent, message, className , count}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
     const DEFAULT_BUTTONS = [
-        { id: 'default-bingbing', textContent: '打劫', message: '冰冰 去打劫', className: 'red' },
-        { id: 'default-ge', textContent: '鸽', message: '鸽 行行好吧', className: 'red' }
+        { id: 'default-bingbing', textContent: '打劫', message: '冰冰 去打劫', className: 'red', count: 0 },
+        { id: 'default-ge', textContent: '鸽', message: '鸽 行行好吧', className: 'red', count: 0 }
     ];
     
     // 发送消息的API函数
@@ -49,6 +51,12 @@
             const savedConfig = localStorage.getItem(STORAGE_KEY);
             if (savedConfig) {
                 buttonsConfig = JSON.parse(savedConfig);
+                // 确保每个按钮都有count属性
+                buttonsConfig.forEach(button => {
+                    if (!button.hasOwnProperty('count')) {
+                        button.count = 0;
+                    }
+                });
                 console.log('已加载保存的按钮配置:', buttonsConfig);
             } else {
                 // 使用默认按钮配置
@@ -100,14 +108,17 @@
             // 创建每个按钮
             buttonsConfig.forEach(button => {
                 var btn = document.createElement('button');
-                btn.id = button.id;
-                btn.textContent = button.textContent;
-                btn.className = button.className || 'red';
-                btn.setAttribute('style', 'margin-right:5px; margin-bottom:5px; padding:4px 8px;');
-                btn.onclick = function() {
-                    sendMsgApi(button.message);
-                };
-                buttonContainer.appendChild(btn);
+            btn.id = button.id;
+            btn.textContent = button.textContent;
+            btn.className = button.className || 'red';
+            btn.setAttribute('style', 'margin-right:5px; margin-bottom:5px; padding:4px 8px; border-radius: 4px;');
+            btn.onclick = function() {
+                sendMsgApi(button.message);
+                // 增加点击次数
+                button.count++;
+                saveButtonsConfig();
+            };
+            buttonContainer.appendChild(btn);
             });
             
             // 添加管理按钮
@@ -128,6 +139,95 @@
     // 生成唯一ID
     function generateUniqueId() {
         return 'custom-button-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+    }
+    
+    // 导入按钮配置
+    function importButtonsConfig() {
+        try {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const importData = JSON.parse(event.target.result);
+                        
+                        if (!importData.buttons || !Array.isArray(importData.buttons)) {
+                            showNotification('无效的导入文件格式', 'error');
+                            return;
+                        }
+                        
+                        // 验证按钮数据结构
+                        const isValid = importData.buttons.every(button => 
+                            button.id && button.textContent && button.message && button.className
+                        );
+                        
+                        if (!isValid) {
+                            showNotification('导入文件数据不完整', 'error');
+                            return;
+                        }
+                        
+                        // 更新按钮配置
+                        buttonsConfig = importData.buttons;
+                        
+                        // 确保每个按钮都有count属性
+                        buttonsConfig.forEach(button => {
+                            if (!button.hasOwnProperty('count')) {
+                                button.count = 0;
+                            }
+                        });
+                        
+                        // 保存并更新UI
+                        saveButtonsConfig();
+                        createButtons();
+                        updateButtonsList();
+                        
+                        showNotification('配置导入成功！', 'success');
+                    } catch (parseError) {
+                        console.error('解析导入文件失败:', parseError);
+                        showNotification('解析导入文件失败', 'error');
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        } catch (e) {
+            console.error('导入配置失败:', e);
+            showNotification('配置导入失败', 'error');
+        }
+    }
+    
+    // 导出按钮配置为JSON文件
+    function exportButtonsConfig() {
+        try {
+            const exportData = {
+                version: version_us,
+                exportDate: new Date().toISOString(),
+                buttons: buttonsConfig
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'tail-button-config.json';
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            showNotification('配置导出成功！', 'success');
+        } catch (e) {
+            console.error('导出配置失败:', e);
+            showNotification('配置导出失败', 'error');
+        }
     }
     
     // 打开按钮管理面板
@@ -420,7 +520,8 @@
                 id: generateUniqueId(),
                 textContent: buttonText,
                 message: buttonMsg,
-                className: colorSelect.value
+                className: colorSelect.value,
+                count: 0
             };
             
             // 添加到配置并保存
@@ -471,6 +572,76 @@
         `;
         buttonsListSection.appendChild(buttonsList);
         contentContainer.appendChild(buttonsListSection);
+        
+        // 导入导出按钮区域
+        const importExportSection = document.createElement('div');
+        importExportSection.style.cssText = `
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        `;
+        
+        // 导出按钮
+        const exportBtn = document.createElement('button');
+        exportBtn.textContent = '导出配置';
+        exportBtn.style.cssText = `
+            flex: 1;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(82, 196, 26, 0.3);
+        `;
+        
+        exportBtn.addEventListener('mouseenter', () => {
+            exportBtn.style.transform = 'translateY(-2px)';
+            exportBtn.style.boxShadow = '0 4px 12px rgba(82, 196, 26, 0.4)';
+        });
+        
+        exportBtn.addEventListener('mouseleave', () => {
+            exportBtn.style.transform = 'translateY(0)';
+            exportBtn.style.boxShadow = '0 2px 8px rgba(82, 196, 26, 0.3)';
+        });
+        
+        exportBtn.onclick = exportButtonsConfig;
+        importExportSection.appendChild(exportBtn);
+        
+        // 导入按钮
+        const importBtn = document.createElement('button');
+        importBtn.textContent = '导入配置';
+        importBtn.style.cssText = `
+            flex: 1;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+        `;
+        
+        importBtn.addEventListener('mouseenter', () => {
+            importBtn.style.transform = 'translateY(-2px)';
+            importBtn.style.boxShadow = '0 4px 12px rgba(24, 144, 255, 0.4)';
+        });
+        
+        importBtn.addEventListener('mouseleave', () => {
+            importBtn.style.transform = 'translateY(0)';
+            importBtn.style.boxShadow = '0 2px 8px rgba(24, 144, 255, 0.3)';
+        });
+        
+        importBtn.onclick = importButtonsConfig;
+        importExportSection.appendChild(importBtn);
+        
+        contentContainer.appendChild(importExportSection);
         
         // 关闭按钮
         const closeBtn = document.createElement('button');
@@ -620,6 +791,15 @@
                 buttonMsg.textContent = '消息: ' + button.message;
                 
                 buttonInfo.appendChild(buttonText);
+                
+                // 点击次数显示
+                const buttonCount = document.createElement('div');
+                buttonCount.style.fontSize = '12px';
+                buttonCount.style.color = '#1890ff';
+                buttonCount.style.marginBottom = '4px';
+                buttonCount.textContent = '点击次数: ' + button.count;
+                buttonInfo.appendChild(buttonCount);
+                
                 buttonInfo.appendChild(buttonMsg);
                 
                 // 操作按钮容器
@@ -945,3 +1125,30 @@
         init();
     }
 })();
+// 添加按钮颜色样式
+GM_addStyle(`
+  .red {
+    color: #f5222d;
+    border: 1px solid #d9d9d9;
+  }
+  
+  .blue {
+    color: #096dd9;
+    border: 1px solid #d9d9d9;
+  }
+  
+  .green {
+    color: #389e0d;
+    border: 1px solid #d9d9d9;
+  }
+  
+  .gray {
+    color: #595959;
+    border: 1px solid #d9d9d9;
+  }
+  
+  .orange {
+    color: #d46b08;
+    border: 1px solid #d9d9d9;
+  }
+`);
