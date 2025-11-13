@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.5
+// @version      1.0.12
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -16,7 +16,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.1.0";
+    const version_us = "v1.0.12";
     // 按钮数据结构：{id, textContent, message, className , count}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
@@ -24,6 +24,351 @@
         { id: 'default-bingbing', textContent: '打劫', message: '冰冰 去打劫', className: 'red', count: 0 },
         { id: 'default-ge', textContent: '鸽', message: '鸽 行行好吧', className: 'red', count: 0 }
     ];
+    
+    // 颜色选项 - 全局常量
+    const colorOptions = [
+        { value: 'red', text: '红色' },
+        { value: 'blue', text: '蓝色' },
+        { value: 'green', text: '绿色' },
+        { value: 'gray', text: '灰色' },
+        { value: 'orange', text: '橙色' }
+    ];
+    
+    // 更新按钮列表的函数 - 全局函数
+    window.updateButtonsList = function() {
+        const listContainer = document.getElementById('buttons-list');
+        if (!listContainer) return;
+        
+        listContainer.innerHTML = '';
+        
+        if (buttonsConfig.length === 0) {
+            const emptyText = document.createElement('div');
+            emptyText.textContent = '暂无按钮，请添加新按钮';
+            emptyText.style.textAlign = 'center';
+            emptyText.style.color = '#999';
+            emptyText.style.padding = '20px';
+            listContainer.appendChild(emptyText);
+            return;
+        }
+        
+        buttonsConfig.forEach((button, index) => {
+            const buttonItem = document.createElement('div');
+            buttonItem.style.cssText = `
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 15px;
+                background: #fff;
+                border: 1px solid #e8e8e8;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                transition: all 0.3s ease;
+            `;
+            
+            // 添加悬停效果
+            buttonItem.addEventListener('mouseenter', () => {
+                buttonItem.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+                buttonItem.style.borderColor = '#d9d9d9';
+            });
+            
+            buttonItem.addEventListener('mouseleave', () => {
+                buttonItem.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
+                buttonItem.style.borderColor = '#e8e8e8';
+            });
+            
+            // 按钮信息
+            const buttonInfo = document.createElement('div');
+            buttonInfo.style.flex = '1';
+            buttonInfo.style.minWidth = '0'; // 确保flex项可以收缩
+            buttonInfo.style.marginRight = '15px';
+            buttonInfo.style.overflow = 'hidden';
+            
+            const buttonText = document.createElement('div');
+            buttonText.style.fontWeight = '500';
+            buttonText.style.marginBottom = '6px';
+            buttonText.style.color = '#262626';
+            buttonText.style.fontSize = '14px';
+            buttonText.style.whiteSpace = 'nowrap';
+            buttonText.style.overflow = 'hidden';
+            buttonText.style.textOverflow = 'ellipsis';
+            buttonText.title = button.textContent; // 添加tooltip显示完整文本
+            buttonText.textContent = button.textContent;
+            
+            const buttonMsg = document.createElement('div');
+            buttonMsg.style.fontSize = '12px';
+            buttonMsg.style.color = '#8c8c8c';
+            buttonMsg.style.lineHeight = '1.4';
+            buttonMsg.style.whiteSpace = 'nowrap';
+            buttonMsg.style.overflow = 'hidden';
+            buttonMsg.style.textOverflow = 'ellipsis';
+            buttonMsg.title = '消息: ' + button.message; // 添加tooltip显示完整文本
+            buttonMsg.textContent = '消息: ' + button.message;
+            
+            buttonInfo.appendChild(buttonText);
+            
+            // 点击次数显示
+            const buttonCount = document.createElement('div');
+            buttonCount.style.fontSize = '12px';
+            buttonCount.style.color = '#1890ff';
+            buttonCount.style.marginBottom = '4px';
+            buttonCount.textContent = '点击次数: ' + button.count;
+            buttonInfo.appendChild(buttonCount);
+            
+            buttonInfo.appendChild(buttonMsg);
+            
+            // 操作按钮容器
+            const actionsDiv = document.createElement('div');
+            actionsDiv.style.display = 'flex';
+            actionsDiv.style.gap = '8px';
+            
+            // 编辑按钮
+            const editBtn = document.createElement('button');
+            editBtn.textContent = '编辑';
+            editBtn.style.cssText = `
+                padding: 6px 12px;
+                background: linear-gradient(135deg, #faad14 0%, #ffc53d 100%);
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 12px;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(250, 173, 20, 0.2);
+            `;
+            
+            editBtn.addEventListener('mouseenter', () => {
+                editBtn.style.background = 'linear-gradient(135deg, #ffc53d 0%, #faad14 100%)';
+                editBtn.style.boxShadow = '0 4px 12px rgba(250, 173, 20, 0.3)';
+                editBtn.style.transform = 'translateY(-1px)';
+            });
+            
+            editBtn.addEventListener('mouseleave', () => {
+                editBtn.style.background = 'linear-gradient(135deg, #faad14 0%, #ffc53d 100%)';
+                editBtn.style.boxShadow = '0 2px 4px rgba(250, 173, 20, 0.2)';
+                editBtn.style.transform = 'translateY(0)';
+            });
+            
+            editBtn.onclick = function() {
+                window.editButton(index);
+            };
+            
+            // 删除按钮
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = '删除';
+            deleteBtn.style.cssText = `
+                padding: 6px 12px;
+                background: linear-gradient(135deg, #f5222d 0%, #ff4d4f 100%);
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 12px;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(245, 34, 45, 0.2);
+            `;
+            
+            deleteBtn.addEventListener('mouseenter', () => {
+                deleteBtn.style.background = 'linear-gradient(135deg, #ff4d4f 0%, #f5222d 100%)';
+                deleteBtn.style.boxShadow = '0 4px 12px rgba(245, 34, 45, 0.3)';
+                deleteBtn.style.transform = 'translateY(-1px)';
+            });
+            
+            deleteBtn.addEventListener('mouseleave', () => {
+                deleteBtn.style.background = 'linear-gradient(135deg, #f5222d 0%, #ff4d4f 100%)';
+                deleteBtn.style.boxShadow = '0 2px 4px rgba(245, 34, 45, 0.2)';
+                deleteBtn.style.transform = 'translateY(0)';
+            });
+            
+            deleteBtn.onclick = function() {
+                if (confirm('确定要删除按钮「' + button.textContent + '」吗？')) {
+                    // 从配置中删除
+                    buttonsConfig.splice(index, 1);
+                    saveButtonsConfig();
+                    
+                    // 重新创建按钮
+                    createButtons();
+                    
+                    // 更新管理面板
+                    updateButtonsList();
+                    
+                    // 显示成功提示
+                    showNotification('按钮删除成功！');
+                }
+            };
+            
+            actionsDiv.appendChild(editBtn);
+            actionsDiv.appendChild(deleteBtn);
+            
+            buttonItem.appendChild(buttonInfo);
+            buttonItem.appendChild(actionsDiv);
+            
+            listContainer.appendChild(buttonItem);
+        });
+    }
+    
+    // 编辑按钮的函数 - 全局函数
+window.editButton = function(index) {
+        const button = buttonsConfig[index];
+        
+        // 创建编辑对话框
+        const editDialog = document.createElement('div');
+        editDialog.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            z-index: 10000;
+            width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-family: Arial, sans-serif;
+        `;
+        
+        // 对话框标题
+        const dialogTitle = document.createElement('h4');
+        dialogTitle.textContent = '编辑按钮';
+        dialogTitle.style.marginTop = '0';
+        dialogTitle.style.textAlign = 'center';
+        dialogTitle.style.marginBottom = '15px';
+        editDialog.appendChild(dialogTitle);
+        
+        // 按钮文本输入
+        const textInputDiv = document.createElement('div');
+        textInputDiv.style.marginBottom = '10px';
+        const textLabel = document.createElement('label');
+        textLabel.textContent = '按钮文本: ';
+        textLabel.style.display = 'inline-block';
+        textLabel.style.width = '80px';
+        const textInput = document.createElement('input');
+        textInput.type = 'text';
+        textInput.value = button.textContent;
+        textInput.style.width = 'calc(100% - 90px)';
+        textInput.style.padding = '5px';
+        textInputDiv.appendChild(textLabel);
+        textInputDiv.appendChild(textInput);
+        editDialog.appendChild(textInputDiv);
+        
+        // 按钮消息输入
+        const msgInputDiv = document.createElement('div');
+        msgInputDiv.style.marginBottom = '10px';
+        const msgLabel = document.createElement('label');
+        msgLabel.textContent = '触发消息: ';
+        msgLabel.style.display = 'inline-block';
+        msgLabel.style.width = '80px';
+        const msgInput = document.createElement('input');
+        msgInput.type = 'text';
+        msgInput.value = button.message;
+        msgInput.style.width = 'calc(100% - 90px)';
+        msgInput.style.padding = '5px';
+        msgInputDiv.appendChild(msgLabel);
+        msgInputDiv.appendChild(msgInput);
+        editDialog.appendChild(msgInputDiv);
+        
+        // 按钮颜色选择
+        const colorSelectDiv = document.createElement('div');
+        colorSelectDiv.style.marginBottom = '15px';
+        const colorLabel = document.createElement('label');
+        colorLabel.textContent = '按钮颜色: ';
+        colorLabel.style.display = 'inline-block';
+        colorLabel.style.width = '80px';
+        const colorSelect = document.createElement('select');
+        colorSelect.style.width = 'calc(100% - 90px)';
+        colorSelect.style.padding = '5px';
+        
+        colorOptions.forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option.value;
+            opt.textContent = option.text;
+            if (option.value === button.className) {
+                opt.selected = true;
+            }
+            colorSelect.appendChild(opt);
+        });
+        
+        colorSelectDiv.appendChild(colorLabel);
+        colorSelectDiv.appendChild(colorSelect);
+        editDialog.appendChild(colorSelectDiv);
+        
+        // 按钮容器
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.style.display = 'flex';
+        buttonsDiv.style.gap = '10px';
+        buttonsDiv.style.justifyContent = 'flex-end';
+        
+        // 取消按钮
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = '取消';
+        cancelBtn.style.cssText = `
+            padding: 6px 12px;
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        `;
+        
+        cancelBtn.onclick = function() {
+            document.body.removeChild(editDialog);
+        };
+        
+        // 保存按钮
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = '保存';
+        saveBtn.style.cssText = `
+            padding: 6px 12px;
+            background: #52c41a;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        `;
+        
+        saveBtn.onclick = function() {
+            const buttonText = textInput.value.trim();
+            const buttonMsg = msgInput.value.trim();
+            
+            if (!buttonText || !buttonMsg) {
+                alert('请填写按钮文本和触发消息');
+                return;
+            }
+            
+            // 更新按钮配置
+            buttonsConfig[index] = {
+                id: button.id, // 保留原ID
+                textContent: buttonText,
+                message: buttonMsg,
+                className: colorSelect.value
+            };
+            
+            saveButtonsConfig();
+            
+            // 重新创建按钮
+            createButtons();
+            
+            // 更新管理面板 - 使用全局函数
+            window.updateButtonsList();
+            
+            // 关闭编辑对话框
+            document.body.removeChild(editDialog);
+            
+            // 显示成功提示
+            showNotification('按钮更新成功！');
+        };
+        
+        buttonsDiv.appendChild(cancelBtn);
+        buttonsDiv.appendChild(saveBtn);
+        editDialog.appendChild(buttonsDiv);
+        
+        // 添加到页面
+        document.body.appendChild(editDialog);
+    }
     
     // 发送消息的API函数
     function sendMsgApi(msg) {
@@ -185,7 +530,10 @@
                         // 保存并更新UI
                         saveButtonsConfig();
                         createButtons();
-                        updateButtonsList();
+                        // 如果管理面板已打开，更新列表
+                        if (document.getElementById('buttons-manager-panel')) {
+                            updateButtonsList();
+                        }
                         
                         showNotification('配置导入成功！', 'success');
                     } catch (parseError) {
@@ -253,7 +601,8 @@
             z-index: 9999;
             width: 520px;
             max-height: 75vh;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             transition: box-shadow 0.3s ease;
@@ -327,6 +676,8 @@
         const contentContainer = document.createElement('div');
         contentContainer.style.cssText = `
             padding: 20px;
+            flex: 1;
+            overflow-y: auto;
         `;
         panel.appendChild(contentContainer);
         
@@ -461,14 +812,6 @@
             colorSelect.style.borderColor = '#d9d9d9';
             colorSelect.style.boxShadow = 'none';
         });
-        
-        const colorOptions = [
-            { value: 'red', text: '红色' },
-            { value: 'blue', text: '蓝色' },
-            { value: 'green', text: '绿色' },
-            { value: 'gray', text: '灰色' },
-            { value: 'orange', text: '橙色' }
-        ];
         
         colorOptions.forEach(option => {
             const opt = document.createElement('option');
@@ -722,339 +1065,7 @@
             }
         });
         
-        // 更新按钮列表的函数
-        function updateButtonsList() {
-            const listContainer = document.getElementById('buttons-list');
-            listContainer.innerHTML = '';
-            
-            if (buttonsConfig.length === 0) {
-                const emptyText = document.createElement('div');
-                emptyText.textContent = '暂无按钮，请添加新按钮';
-                emptyText.style.textAlign = 'center';
-                emptyText.style.color = '#999';
-                emptyText.style.padding = '20px';
-                listContainer.appendChild(emptyText);
-                return;
-            }
-            
-            buttonsConfig.forEach((button, index) => {
-                const buttonItem = document.createElement('div');
-                buttonItem.style.cssText = `
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 15px;
-                    background: #fff;
-                    border: 1px solid #e8e8e8;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-                    transition: all 0.3s ease;
-                `;
-                
-                // 添加悬停效果
-                buttonItem.addEventListener('mouseenter', () => {
-                    buttonItem.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-                    buttonItem.style.borderColor = '#d9d9d9';
-                });
-                
-                buttonItem.addEventListener('mouseleave', () => {
-                    buttonItem.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
-                    buttonItem.style.borderColor = '#e8e8e8';
-                });
-                
-                // 按钮信息
-                const buttonInfo = document.createElement('div');
-                buttonInfo.style.flex = '1';
-                buttonInfo.style.minWidth = '0'; // 确保flex项可以收缩
-                buttonInfo.style.marginRight = '15px';
-                buttonInfo.style.overflow = 'hidden';
-                
-                const buttonText = document.createElement('div');
-                buttonText.style.fontWeight = '500';
-                buttonText.style.marginBottom = '6px';
-                buttonText.style.color = '#262626';
-                buttonText.style.fontSize = '14px';
-                buttonText.style.whiteSpace = 'nowrap';
-                buttonText.style.overflow = 'hidden';
-                buttonText.style.textOverflow = 'ellipsis';
-                buttonText.title = button.textContent; // 添加tooltip显示完整文本
-                buttonText.textContent = button.textContent;
-                
-                const buttonMsg = document.createElement('div');
-                buttonMsg.style.fontSize = '12px';
-                buttonMsg.style.color = '#8c8c8c';
-                buttonMsg.style.lineHeight = '1.4';
-                buttonMsg.style.whiteSpace = 'nowrap';
-                buttonMsg.style.overflow = 'hidden';
-                buttonMsg.style.textOverflow = 'ellipsis';
-                buttonMsg.title = '消息: ' + button.message; // 添加tooltip显示完整文本
-                buttonMsg.textContent = '消息: ' + button.message;
-                
-                buttonInfo.appendChild(buttonText);
-                
-                // 点击次数显示
-                const buttonCount = document.createElement('div');
-                buttonCount.style.fontSize = '12px';
-                buttonCount.style.color = '#1890ff';
-                buttonCount.style.marginBottom = '4px';
-                buttonCount.textContent = '点击次数: ' + button.count;
-                buttonInfo.appendChild(buttonCount);
-                
-                buttonInfo.appendChild(buttonMsg);
-                
-                // 操作按钮容器
-                const actionsDiv = document.createElement('div');
-                actionsDiv.style.display = 'flex';
-                actionsDiv.style.gap = '8px';
-                
-                // 编辑按钮
-                const editBtn = document.createElement('button');
-                editBtn.textContent = '编辑';
-                editBtn.style.cssText = `
-                    padding: 6px 12px;
-                    background: linear-gradient(135deg, #faad14 0%, #ffc53d 100%);
-                    color: white;
-                    border: none;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    font-size: 12px;
-                    font-weight: 500;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 2px 4px rgba(250, 173, 20, 0.2);
-                `;
-                
-                editBtn.addEventListener('mouseenter', () => {
-                    editBtn.style.background = 'linear-gradient(135deg, #ffc53d 0%, #faad14 100%)';
-                    editBtn.style.boxShadow = '0 4px 12px rgba(250, 173, 20, 0.3)';
-                    editBtn.style.transform = 'translateY(-1px)';
-                });
-                
-                editBtn.addEventListener('mouseleave', () => {
-                    editBtn.style.background = 'linear-gradient(135deg, #faad14 0%, #ffc53d 100%)';
-                    editBtn.style.boxShadow = '0 2px 4px rgba(250, 173, 20, 0.2)';
-                    editBtn.style.transform = 'translateY(0)';
-                });
-                
-                editBtn.onclick = function() {
-                    editButton(index);
-                };
-                
-                // 删除按钮
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = '删除';
-                deleteBtn.style.cssText = `
-                    padding: 6px 12px;
-                    background: linear-gradient(135deg, #f5222d 0%, #ff4d4f 100%);
-                    color: white;
-                    border: none;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    font-size: 12px;
-                    font-weight: 500;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 2px 4px rgba(245, 34, 45, 0.2);
-                `;
-                
-                deleteBtn.addEventListener('mouseenter', () => {
-                    deleteBtn.style.background = 'linear-gradient(135deg, #ff4d4f 0%, #f5222d 100%';
-                    deleteBtn.style.boxShadow = '0 4px 12px rgba(245, 34, 45, 0.3)';
-                    deleteBtn.style.transform = 'translateY(-1px)';
-                });
-                
-                deleteBtn.addEventListener('mouseleave', () => {
-                    deleteBtn.style.background = 'linear-gradient(135deg, #f5222d 0%, #ff4d4f 100%)';
-                    deleteBtn.style.boxShadow = '0 2px 4px rgba(245, 34, 45, 0.2)';
-                    deleteBtn.style.transform = 'translateY(0)';
-                });
-                
-                deleteBtn.onclick = function() {
-                    if (confirm('确定要删除按钮「' + button.textContent + '」吗？')) {
-                        // 从配置中删除
-                        buttonsConfig.splice(index, 1);
-                        saveButtonsConfig();
-                        
-                        // 重新创建按钮
-                        createButtons();
-                        
-                        // 更新管理面板
-                        updateButtonsList();
-                        
-                        // 显示成功提示
-                        showNotification('按钮删除成功！');
-                    }
-                };
-                
-                actionsDiv.appendChild(editBtn);
-                actionsDiv.appendChild(deleteBtn);
-                
-                buttonItem.appendChild(buttonInfo);
-                buttonItem.appendChild(actionsDiv);
-                
-                listContainer.appendChild(buttonItem);
-            });
-        }
-        
-        // 编辑按钮的函数
-        function editButton(index) {
-            const button = buttonsConfig[index];
-            
-            // 创建编辑对话框
-            const editDialog = document.createElement('div');
-            editDialog.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: white;
-                border: 1px solid #ccc;
-                border-radius: 8px;
-                padding: 20px;
-                z-index: 10000;
-                width: 400px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                font-family: Arial, sans-serif;
-            `;
-            
-            // 对话框标题
-            const dialogTitle = document.createElement('h4');
-            dialogTitle.textContent = '编辑按钮';
-            dialogTitle.style.marginTop = '0';
-            dialogTitle.style.textAlign = 'center';
-            dialogTitle.style.marginBottom = '15px';
-            editDialog.appendChild(dialogTitle);
-            
-            // 按钮文本输入
-            const textInputDiv = document.createElement('div');
-            textInputDiv.style.marginBottom = '10px';
-            const textLabel = document.createElement('label');
-            textLabel.textContent = '按钮文本: ';
-            textLabel.style.display = 'inline-block';
-            textLabel.style.width = '80px';
-            const textInput = document.createElement('input');
-            textInput.type = 'text';
-            textInput.value = button.textContent;
-            textInput.style.width = 'calc(100% - 90px)';
-            textInput.style.padding = '5px';
-            textInputDiv.appendChild(textLabel);
-            textInputDiv.appendChild(textInput);
-            editDialog.appendChild(textInputDiv);
-            
-            // 按钮消息输入
-            const msgInputDiv = document.createElement('div');
-            msgInputDiv.style.marginBottom = '10px';
-            const msgLabel = document.createElement('label');
-            msgLabel.textContent = '触发消息: ';
-            msgLabel.style.display = 'inline-block';
-            msgLabel.style.width = '80px';
-            const msgInput = document.createElement('input');
-            msgInput.type = 'text';
-            msgInput.value = button.message;
-            msgInput.style.width = 'calc(100% - 90px)';
-            msgInput.style.padding = '5px';
-            msgInputDiv.appendChild(msgLabel);
-            msgInputDiv.appendChild(msgInput);
-            editDialog.appendChild(msgInputDiv);
-            
-            // 按钮颜色选择
-            const colorSelectDiv = document.createElement('div');
-            colorSelectDiv.style.marginBottom = '15px';
-            const colorLabel = document.createElement('label');
-            colorLabel.textContent = '按钮颜色: ';
-            colorLabel.style.display = 'inline-block';
-            colorLabel.style.width = '80px';
-            const colorSelect = document.createElement('select');
-            colorSelect.style.width = 'calc(100% - 90px)';
-            colorSelect.style.padding = '5px';
-            
-            colorOptions.forEach(option => {
-                const opt = document.createElement('option');
-                opt.value = option.value;
-                opt.textContent = option.text;
-                if (option.value === button.className) {
-                    opt.selected = true;
-                }
-                colorSelect.appendChild(opt);
-            });
-            
-            colorSelectDiv.appendChild(colorLabel);
-            colorSelectDiv.appendChild(colorSelect);
-            editDialog.appendChild(colorSelectDiv);
-            
-            // 按钮容器
-            const buttonsDiv = document.createElement('div');
-            buttonsDiv.style.display = 'flex';
-            buttonsDiv.style.gap = '10px';
-            buttonsDiv.style.justifyContent = 'flex-end';
-            
-            // 取消按钮
-            const cancelBtn = document.createElement('button');
-            cancelBtn.textContent = '取消';
-            cancelBtn.style.cssText = `
-                padding: 6px 12px;
-                background: #f0f0f0;
-                color: #333;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 14px;
-            `;
-            
-            cancelBtn.onclick = function() {
-                document.body.removeChild(editDialog);
-            };
-            
-            // 保存按钮
-            const saveBtn = document.createElement('button');
-            saveBtn.textContent = '保存';
-            saveBtn.style.cssText = `
-                padding: 6px 12px;
-                background: #52c41a;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 14px;
-            `;
-            
-            saveBtn.onclick = function() {
-                const buttonText = textInput.value.trim();
-                const buttonMsg = msgInput.value.trim();
-                
-                if (!buttonText || !buttonMsg) {
-                    alert('请填写按钮文本和触发消息');
-                    return;
-                }
-                
-                // 更新按钮配置
-                buttonsConfig[index] = {
-                    id: button.id, // 保留原ID
-                    textContent: buttonText,
-                    message: buttonMsg,
-                    className: colorSelect.value
-                };
-                
-                saveButtonsConfig();
-                
-                // 重新创建按钮
-                createButtons();
-                
-                // 更新管理面板
-                updateButtonsList();
-                
-                // 关闭编辑对话框
-                document.body.removeChild(editDialog);
-                
-                // 显示成功提示
-                showNotification('按钮更新成功！');
-            };
-            
-            buttonsDiv.appendChild(cancelBtn);
-            buttonsDiv.appendChild(saveBtn);
-            editDialog.appendChild(buttonsDiv);
-            
-            // 添加到页面
-            document.body.appendChild(editDialog);
-        }
+
     }
     
     // 显示通知
