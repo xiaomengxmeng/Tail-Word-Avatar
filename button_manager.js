@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.12
+// @version      1.0.13
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -16,7 +16,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.12";
+    const version_us = "v1.0.13";
     // 按钮数据结构：{id, textContent, message, className , count}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
@@ -344,7 +344,8 @@ window.editButton = function(index) {
                 id: button.id, // 保留原ID
                 textContent: buttonText,
                 message: buttonMsg,
-                className: colorSelect.value
+                className: colorSelect.value,
+                count: button.count || 0 // 保留原始点击次数，如果不存在则设为0
             };
             
             saveButtonsConfig();
