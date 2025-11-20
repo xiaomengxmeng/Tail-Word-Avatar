@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         头像生成脚本
 // @namespace    http://tampermonkey.net/
-// @version      1.0.11
+// @version      1.0.12
 // @description  仅头像生成按钮的脚本
 // @match        https://fishpi.cn/*
 // @match        https://fishpi.cn/cr
@@ -188,25 +188,25 @@
                 x.appendChild(elve);
             }
             
-            // 创建冰冰按钮
-            var bingbingButton = document.createElement('button');
-            bingbingButton.id = 'bingbing-button';
-            bingbingButton.textContent = '打劫';
-            bingbingButton.className = 'red';
-            bingbingButton.setAttribute('style', 'margin-right:5px');
-            bingbingButton.onclick = function() {
-                sendMsgApi('冰冰 去打劫');
-            };
+            // // 创建冰冰按钮
+            // var bingbingButton = document.createElement('button');
+            // bingbingButton.id = 'bingbing-button';
+            // bingbingButton.textContent = '打劫';
+            // bingbingButton.className = 'red';
+            // bingbingButton.setAttribute('style', 'margin-right:5px');
+            // bingbingButton.onclick = function() {
+            //     sendMsgApi('冰冰 去打劫');
+            // };
             
-            // 创建鸽按钮
-            var geButton = document.createElement('button');
-            geButton.id = 'ge-button';
-            geButton.textContent = '鸽';
-            geButton.className = 'red';
-            geButton.setAttribute('style', 'margin-right:5px');
-            geButton.onclick = function() {
-                sendMsgApi('鸽 行行好吧');
-            };
+            // // 创建鸽按钮
+            // var geButton = document.createElement('button');
+            // geButton.id = 'ge-button';
+            // geButton.textContent = '鸽';
+            // geButton.className = 'red';
+            // geButton.setAttribute('style', 'margin-right:5px');
+            // geButton.onclick = function() {
+            //     sendMsgApi('鸽 行行好吧');
+            // };
             //FishFishFish https://file.fishpi.cn/2025/08/faebd5a59a694b23bceef58d6a12fee4-3457696f.gif
             //![](https://fishpi.cn/gen?ver=0.1&scale=0.79&txt=%E7%88%B1%E8%80%8C%E4%B8%8D%E5%BE%97%20%2D%20%E6%AD%A2%E4%BA%8E%E5%94%87%E9%BD%BF%EF%BC%8C%E6%8E%A9%E4%BA%8E%E5%B2%81%E6%9C%88&url=https://file.fishpi.cn/2025/10/aj1-6b5eb828.gif&backcolor=F5DC78,C8B4FF,ffffff&shadow=0.8&anime=3&way=right&fontway=right&fontcolor=ffffff,F5DC78 "爱而不得 - 止于唇齿，掩于岁月")
             //![](https://fishpi.cn/gen?ver=0.1&scale=0.79&txt=%E7%88%B1%E8%80%8C%E4%B8%8D%E5%BE%97&url=https://file.fishpi.cn/2025/10/aj1-6b5eb828.gif&backcolor=F5DC78,C8B4FF,ffffff&shadow=0.8&anime=3&way=right&fontway=right&fontcolor=ffffff,F5DC78 "爱而不得")
@@ -262,42 +262,42 @@
                 }
             };
             
-            // 创建冰冰来个红包按钮
-            var bingbingHongbaoButton = document.createElement('button');
-            bingbingHongbaoButton.id = 'bingbing-hongbao-button';
-            bingbingHongbaoButton.textContent = '红包';
-            bingbingHongbaoButton.className = 'red';
-            bingbingHongbaoButton.setAttribute('style', 'margin-right:5px');
-            bingbingHongbaoButton.onclick = function() {
-                sendMsgApi('冰冰 来个红包');
-            };
+            // // 创建冰冰来个红包按钮
+            // var bingbingHongbaoButton = document.createElement('button');
+            // bingbingHongbaoButton.id = 'bingbing-hongbao-button';
+            // bingbingHongbaoButton.textContent = '红包';
+            // bingbingHongbaoButton.className = 'red';
+            // bingbingHongbaoButton.setAttribute('style', 'margin-right:5px');
+            // bingbingHongbaoButton.onclick = function() {
+            //     sendMsgApi('冰冰 来个红包');
+            // };
             
-            // 创建雷公助我按钮
-            var lightningButton = document.createElement('button');
-            lightningButton.id = 'lightning-button';
-            lightningButton.textContent = '雷';
-            lightningButton.className = 'red';
-            lightningButton.setAttribute('style', 'margin-right:5px');
-            lightningButton.onclick = function() {
-                sendMsgApi('小斗士 雷公助我');
-            };
+            // // 创建雷公助我按钮
+            // var lightningButton = document.createElement('button');
+            // lightningButton.id = 'lightning-button';
+            // lightningButton.textContent = '雷';
+            // lightningButton.className = 'red';
+            // lightningButton.setAttribute('style', 'margin-right:5px');
+            // lightningButton.onclick = function() {
+            //     sendMsgApi('小斗士 雷公助我');
+            // };
             
-            // 创建火烧连营按钮
-            var fireButton = document.createElement('button');
-            fireButton.id = 'fire-button';
-            fireButton.textContent = '火';
-            fireButton.className = 'red';
-            fireButton.setAttribute('style', 'margin-right:5px');
-            fireButton.onclick = function() {
-                sendMsgApi('小斗士 火烧连营');
-            };
+            // // 创建火烧连营按钮
+            // var fireButton = document.createElement('button');
+            // fireButton.id = 'fire-button';
+            // fireButton.textContent = '火';
+            // fireButton.className = 'red';
+            // fireButton.setAttribute('style', 'margin-right:5px');
+            // fireButton.onclick = function() {
+            //     sendMsgApi('小斗士 火烧连营');
+            // };
             
             // 添加按钮到图层，避免重复添加
-            if (!document.getElementById('bingbing-button')) elve.appendChild(bingbingButton);
-            if (!document.getElementById('ge-button')) elve.appendChild(geButton);
-            if (!document.getElementById('bingbing-hongbao-button')) elve.appendChild(bingbingHongbaoButton);
-            if (!document.getElementById('lightning-button')) elve.appendChild(lightningButton);
-            if (!document.getElementById('fire-button')) elve.appendChild(fireButton);
+            // if (!document.getElementById('bingbing-button')) elve.appendChild(bingbingButton);
+            // if (!document.getElementById('ge-button')) elve.appendChild(geButton);
+            // if (!document.getElementById('bingbing-hongbao-button')) elve.appendChild(bingbingHongbaoButton);
+            // if (!document.getElementById('lightning-button')) elve.appendChild(lightningButton);
+            // if (!document.getElementById('fire-button')) elve.appendChild(fireButton);
             if (!document.getElementById('avatar-gen-button')) elve.appendChild(avatarGenButton);
         } catch (e) {
             console.error('创建按钮失败:', e);
