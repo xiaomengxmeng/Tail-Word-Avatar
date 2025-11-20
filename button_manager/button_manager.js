@@ -10,7 +10,7 @@
 // @grant        GM_registerMenuCommand
 // @grant        GM_addStyle
 // @grant        unsafeWindow
-
+// @license MIT
 
 // ==/UserScript==
 
