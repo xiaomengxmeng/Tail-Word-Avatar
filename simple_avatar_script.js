@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         头像生成脚本
 // @namespace    http://tampermonkey.net/
-// @version      1.0.14
+// @version      1.0.15
 // @description  仅头像生成按钮的脚本
 // @match        https://fishpi.cn/*
 // @match        https://fishpi.cn/cr
