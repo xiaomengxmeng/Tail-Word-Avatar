@@ -8,6 +8,7 @@
 // @match        https://fishpi.cn/cr
 // @icon         https://fishpi.cn/images/favicon.png
 // @grant        GM_registerMenuCommand
+// @license MIT
 // ==/UserScript==
 
 (function() {

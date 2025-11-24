@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         头像生成脚本
 // @namespace    http://tampermonkey.net/
-// @version      1.0.13
+// @version      1.0.14
 // @description  仅头像生成按钮的脚本
 // @match        https://fishpi.cn/*
 // @match        https://fishpi.cn/cr
@@ -343,7 +343,7 @@
             // 创建头像生成按钮
             var avatarGenButton = document.createElement('button');
             avatarGenButton.id = 'avatar-gen-button';
-            avatarGenButton.textContent = 'Test';
+            avatarGenButton.textContent = '头像';
             avatarGenButton.className = 'red';
             avatarGenButton.setAttribute('style', 'margin-right:5px');
             avatarGenButton.onclick = function() {
