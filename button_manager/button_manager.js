@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.14
+// @version      1.0.15
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -16,7 +16,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.14";
+    const version_us = "v1.0.15";
     // 按钮数据结构：{id, textContent, message, className , count}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
@@ -502,121 +502,135 @@ window.editButton = function(index) {
                 }
             }
             
-            // 设置按钮独立拖动事件
-            function setupButtonDrag(buttonId, buttonElement) {
+            // 重置所有按钮位置
+            function resetAllButtonsPosition() {
+                try {
+                    // 清除localStorage中所有按钮位置数据
+                    for (let key in localStorage) {
+                        if (key.startsWith('button_position_')) {
+                            localStorage.removeItem(key);
+                        }
+                    }
+                    
+                    // 重新创建按钮以应用默认位置
+                    createButtons();
+                    
+                    console.log('所有按钮位置已重置');
+                } catch (e) {
+                    console.error('重置按钮位置失败:', e);
+                    showNotification('重置失败，请刷新页面重试', 'error');
+                }
+            }
+            
+            // 设置拖动事件（带点击取消功能） - 参考fish_favor_system.js实现
+            function setupDragEventsWithClickCancel(element, dragElement, clickTimeout, buttonId) {
                 let isDragging = false;
                 let offsetX, offsetY;
                 let hasMoved = false;
-                let clickTimeout;
+                
+                // 计算鼠标相对于元素左上角的偏移量
+                const elementRect = element.getBoundingClientRect();
+                offsetX = event.clientX - elementRect.left;
+                offsetY = event.clientY - elementRect.top;
+                
+                // 改变拖动过程中的样式
+                element.style.opacity = '0.8';
+                element.style.transform = 'scale(1.05)'; // 轻微放大
+                element.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)'; // 增强阴影
+                element.style.cursor = 'grabbing';
+                document.body.style.cursor = 'grabbing';
+                
+                // 鼠标移动事件处理
+                function handleMouseMove(e) {
+                    // 如果移动超过5px，则视为拖动
+                    if (!hasMoved) {
+                        const movedX = Math.abs(e.clientX - (elementRect.left + offsetX));
+                        const movedY = Math.abs(e.clientY - (elementRect.top + offsetY));
+                        hasMoved = (movedX > 5 || movedY > 5);
+                        
+                        // 如果开始拖动，取消点击事件
+                        if (hasMoved && clickTimeout) {
+                            clearTimeout(clickTimeout);
+                        }
+                    }
+                    
+                    if (hasMoved) {
+                        isDragging = true;
+                        
+                        // 计算新位置（考虑滚动）
+                        const left = e.clientX - offsetX + window.scrollX;
+                        const top = e.clientY - offsetY + window.scrollY;
+                        
+                        // 应用新位置
+                        element.style.left = left + 'px';
+                        element.style.top = top + 'px';
+                    }
+                }
+                
+                // 鼠标释放事件处理
+                function handleMouseUp() {
+                    // 移除事件监听器
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+                    
+                    // 恢复样式
+                    element.style.opacity = '1';
+                    element.style.transform = 'scale(1)'; // 恢复原始大小
+                    element.style.boxShadow = ''; // 恢复原始阴影
+                    element.style.cursor = 'grab';
+                    document.body.style.cursor = 'default';
+                    
+                    // 如果有拖动，保存位置
+                    if (isDragging) {
+                        saveButtonPosition(buttonId, element);
+                    }
+                }
+                
+                // 添加鼠标移动和释放事件监听器到document
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+                
+                // 防止文本选中
+                event.preventDefault();
+            }
+            
+            // 设置按钮独立拖动事件 - 参考fish_favor_system.js实现
+            function setupButtonDrag(buttonId, buttonElement) {
+                // 确保按钮初始样式正确
+                buttonElement.style.position = 'absolute';
+                buttonElement.style.margin = '0';
+                buttonElement.style.zIndex = '100';
+                buttonElement.style.cursor = 'grab';
+                buttonElement.style.userSelect = 'none';
                 
                 // 保存原始点击处理
                 const originalOnClick = buttonElement.onclick;
                 
-                // 重写点击事件处理
-                buttonElement.onclick = function(e) {
-                    if (!isDragging) {
-                        if (originalOnClick) originalOnClick();
+                // 移除原有的onclick处理，避免重复触发
+                buttonElement.onclick = null;
+                
+                // 重写mousedown事件，处理拖动和点击
+                buttonElement.onmousedown = function(e) {
+                    if (e.target === buttonElement) {
+                        // 延迟执行点击事件，优先处理拖动
+                        const clickTimeout = setTimeout(() => {
+                            if (originalOnClick) originalOnClick();
+                        }, 200);
+                        
+                        // 设置拖动事件，拖动时取消点击
+                        setupDragEventsWithClickCancel(buttonElement, buttonElement, clickTimeout, buttonId);
                     }
                 };
                 
                 // 鼠标进入时设置为拖动光标
                 buttonElement.onmouseenter = function() {
-                    if (!isDragging) {
-                        this.style.cursor = 'grab';
-                    }
+                    this.style.cursor = 'grab';
                 };
                 
                 // 鼠标离开时恢复默认光标
                 buttonElement.onmouseleave = function() {
-                    if (!isDragging) {
-                        this.style.cursor = 'default';
-                    }
+                    this.style.cursor = 'default';
                 };
-                
-                // 鼠标按下事件
-                buttonElement.onmousedown = function(e) {
-                    e.preventDefault();
-                    
-                    // 设置拖动中光标
-                    this.style.cursor = 'grabbing';
-                    document.body.style.cursor = 'grabbing';
-                    
-                    // 延迟执行点击事件，优先处理拖动
-                    clickTimeout = setTimeout(() => {
-                        if (!isDragging && originalOnClick) {
-                            originalOnClick();
-                        }
-                    }, 200);
-                    
-                    // 计算偏移量
-                    const rect = buttonElement.getBoundingClientRect();
-                    offsetX = e.clientX - rect.left;
-                    offsetY = e.clientY - rect.top;
-                    
-                    // 设置为绝对定位
-                    buttonElement.style.position = 'absolute';
-                    buttonElement.style.margin = '0'; // 移除边距
-                    buttonElement.style.zIndex = '101'; // 确保拖动时在最上层
-                    
-                    // 添加临时样式 - 增强拖动视觉反馈
-                    buttonElement.style.opacity = '0.8';
-                    buttonElement.style.transform = 'scale(1.05)'; // 轻微放大
-                    buttonElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)'; // 增强阴影
-                    
-                    // 鼠标移动事件
-                    function onMouseMove(e) {
-                        // 判断是否真正移动
-                        if (!hasMoved) {
-                            hasMoved = true; // 简化判断，只要移动就视为拖动
-                        }
-                        
-                        if (hasMoved) {
-                            isDragging = true;
-                            
-                            // 取消点击事件
-                            clearTimeout(clickTimeout);
-                            
-                            // 计算新位置（使用更简单的全局定位方式）
-                            const left = e.clientX - offsetX + window.scrollX;
-                            const top = e.clientY - offsetY + window.scrollY;
-                            
-                            // 应用新位置
-                            buttonElement.style.left = left + 'px';
-                            buttonElement.style.top = top + 'px';
-                        }
-                    }
-                    
-                    // 鼠标释放事件
-                    function onMouseUp() {
-                        // 恢复样式
-                        buttonElement.style.opacity = '1';
-                        buttonElement.style.transform = 'scale(1)'; // 恢复原始大小
-                        buttonElement.style.boxShadow = ''; // 恢复原始阴影
-                        buttonElement.style.cursor = 'grab'; // 恢复拖动准备光标
-                        document.body.style.cursor = 'default'; // 恢复全局光标
-                        
-                        // 保存位置
-                        if (isDragging) {
-                            saveButtonPosition(buttonId, buttonElement);
-                        }
-                        
-                        // 重置状态
-                        isDragging = false;
-                        hasMoved = false;
-                        clearTimeout(clickTimeout);
-                        
-                        // 移除事件监听器
-                        document.removeEventListener('mousemove', onMouseMove);
-                        document.removeEventListener('mouseup', onMouseUp);
-                    }
-                    
-                    // 添加事件监听器
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                };
-                
-                // 初始化光标样式
-                buttonElement.style.cursor = 'grab';
             }
             
             // 根据按钮类型获取对应的样式
@@ -1415,6 +1429,42 @@ window.editButton = function(index) {
         
         importBtn.onclick = importButtonsConfig;
         importExportSection.appendChild(importBtn);
+        
+        // 重置按钮位置
+        const resetPositionBtn = document.createElement('button');
+        resetPositionBtn.textContent = '重置按钮位置';
+        resetPositionBtn.style.cssText = `
+            flex: 1;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #fa8c16 0%, #ffa940 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(250, 140, 22, 0.3);
+        `;
+        
+        resetPositionBtn.addEventListener('mouseenter', () => {
+            resetPositionBtn.style.transform = 'translateY(-2px)';
+            resetPositionBtn.style.boxShadow = '0 4px 12px rgba(250, 140, 22, 0.4)';
+        });
+        
+        resetPositionBtn.addEventListener('mouseleave', () => {
+            resetPositionBtn.style.transform = 'translateY(0)';
+            resetPositionBtn.style.boxShadow = '0 2px 8px rgba(250, 140, 22, 0.3)';
+        });
+        
+        resetPositionBtn.onclick = function() {
+            if (confirm('确定要重置所有按钮的位置吗？这将清除所有保存的位置设置。')) {
+                resetAllButtonsPosition();
+                showNotification('按钮位置已重置！', 'success');
+            }
+        };
+        
+        importExportSection.appendChild(resetPositionBtn);
         
         contentContainer.appendChild(importExportSection);
         
