@@ -446,15 +446,15 @@ window.editButton = function(index) {
                     buttonContainer.align = "right";
                     buttonContainer.style.marginBottom = "10px"; // 保留原有的底部边距
                     
-                    // 设置容器为固定位置且一直占用空间，不允许拖动
-                    buttonContainer.style.position = 'relative'; // 相对定位，保持布局流并占用空间
-                    buttonContainer.style.display = 'inline-block'; // 内联块，根据内容自适应大小
+                    // 设置容器样式以支持按钮的绝对定位拖动
+                    buttonContainer.style.position = 'relative'; // 相对定位，为绝对定位的子元素提供参考
+                    buttonContainer.style.display = 'block'; // 块级元素，确保正确布局
+                    buttonContainer.style.width = '100%'; // 宽度自适应父容器
                     buttonContainer.style.minHeight = '50px'; // 确保至少有一定高度
-                    buttonContainer.style.minWidth = '50px'; // 确保至少有一定宽度
                     buttonContainer.style.zIndex = '99'; // 稍低于可拖动按钮
                     buttonContainer.style.backgroundColor = 'transparent';
                     buttonContainer.style.border = 'none';
-                    buttonContainer.style.padding = '5px';
+                    buttonContainer.style.padding = '0'; // 移除内边距，避免影响按钮定位
                     buttonContainer.style.cursor = 'default'; // 默认鼠标样式
                     
                     // 保持原有的插入方式，添加到回复区域内部
@@ -464,6 +464,11 @@ window.editButton = function(index) {
                 } else {
                     // 清空现有按钮，避免重复添加
                     buttonContainer.innerHTML = '';
+                    // 确保容器样式正确
+                    buttonContainer.style.position = 'relative';
+                    buttonContainer.style.display = 'block';
+                    buttonContainer.style.width = '100%';
+                    buttonContainer.style.padding = '0';
                 }
             
             // 为每个按钮应用保存的位置
@@ -551,10 +556,10 @@ window.editButton = function(index) {
                     // 设置为绝对定位
                     buttonElement.style.position = 'absolute';
                     buttonElement.style.margin = '0'; // 移除边距
+                    buttonElement.style.zIndex = '101'; // 确保拖动时在最上层
                     
                     // 添加临时样式 - 增强拖动视觉反馈
                     buttonElement.style.opacity = '0.8';
-                    buttonElement.style.zIndex = '101'; // 确保拖动时在最上层
                     buttonElement.style.transform = 'scale(1.05)'; // 轻微放大
                     buttonElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)'; // 增强阴影
                     
@@ -562,9 +567,7 @@ window.editButton = function(index) {
                     function onMouseMove(e) {
                         // 判断是否真正移动
                         if (!hasMoved) {
-                            const movedX = Math.abs(e.clientX - (rect.left + offsetX));
-                            const movedY = Math.abs(e.clientY - (rect.top + offsetY));
-                            hasMoved = (movedX > 3 || movedY > 3);
+                            hasMoved = true; // 简化判断，只要移动就视为拖动
                         }
                         
                         if (hasMoved) {
@@ -573,10 +576,9 @@ window.editButton = function(index) {
                             // 取消点击事件
                             clearTimeout(clickTimeout);
                             
-                            // 计算新位置（考虑滚动）
-                            const containerRect = buttonContainer.getBoundingClientRect();
-                            const left = e.clientX - offsetX - containerRect.left + containerRect.scrollLeft;
-                            const top = e.clientY - offsetY - containerRect.top + containerRect.scrollTop;
+                            // 计算新位置（使用更简单的全局定位方式）
+                            const left = e.clientX - offsetX + window.scrollX;
+                            const top = e.clientY - offsetY + window.scrollY;
                             
                             // 应用新位置
                             buttonElement.style.left = left + 'px';
@@ -622,18 +624,18 @@ window.editButton = function(index) {
                 // 优化后的按钮基础样式，更接近好感管理按钮的风格
                 const baseStyle = `
                     padding: 6px 12px;
-                    margin-right: 5px;
-                    margin-bottom: 5px;
+                    margin: 0; // 移除边距，避免影响绝对定位
                     border-radius: 6px;
                     font-size: 14px;
                     cursor: pointer;
                     transition: all 0.3s ease;
                     outline: none;
                     border: 1px solid;
-                    position: relative;
+                    position: absolute; // 设置为绝对定位
                     z-index: 100;
                     font-weight: 500;
                     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                    user-select: none; // 防止拖动时选中文本
                 `;
                 
                 // 根据不同的按钮类型设置优化后的颜色方案
