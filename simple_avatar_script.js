@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         头像生成脚本
 // @namespace    http://tampermonkey.net/
-// @version      1.0.12
+// @version      1.0.13
 // @description  仅头像生成按钮的脚本
 // @match        https://fishpi.cn/*
 // @match        https://fishpi.cn/cr
@@ -148,6 +148,115 @@
     
     // 头像生成配置
     let avatarConfig = loadConfig();
+    
+    // 按钮位置存储键名
+    const BUTTON_POSITION_KEY = 'avatar_script_button_position';
+    
+    // 应用保存的位置
+    function applySavedPosition(element) {
+        try {
+            const savedPos = localStorage.getItem(BUTTON_POSITION_KEY);
+            if (savedPos) {
+                const pos = JSON.parse(savedPos);
+                element.style.position = 'absolute';
+                element.style.left = pos.left + 'px';
+                element.style.top = pos.top + 'px';
+                element.style.zIndex = '1000';
+                return true;
+            }
+        } catch (e) {
+            console.error('应用保存的位置失败:', e);
+        }
+        return false;
+    }
+    
+    // 保存按钮位置
+    function saveButtonPosition(element) {
+        try {
+            const rect = element.getBoundingClientRect();
+            const position = {
+                left: rect.left,
+                top: rect.top
+            };
+            localStorage.setItem(BUTTON_POSITION_KEY, JSON.stringify(position));
+        } catch (e) {
+            console.error('保存按钮位置失败:', e);
+        }
+    }
+    
+    // 设置拖动事件，支持点击取消拖动
+    function setupDragEventsWithClickCancel(element) {
+        let isDragging = false;
+        let offsetX = 0;
+        let offsetY = 0;
+        let clickStartTime = 0;
+        let isClickCanceled = false;
+        let originalPosition = element.style.position;
+        let originalMargin = element.style.marginBottom;
+        
+        element.addEventListener('mousedown', function(e) {
+            // 记录点击开始时间
+            clickStartTime = Date.now();
+            isClickCanceled = false;
+            
+            // 计算偏移量
+            const rect = element.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+            
+            // 临时切换为absolute定位
+            element.style.position = 'absolute';
+            element.style.zIndex = '1000';
+            
+            // 添加鼠标移动和释放事件
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+            
+            // 阻止默认事件以避免文本选择
+            e.preventDefault();
+        });
+        
+        function onMouseMove(e) {
+            isDragging = true;
+            
+            // 计算新位置
+            const newLeft = e.clientX - offsetX;
+            const newTop = e.clientY - offsetY;
+            
+            // 应用新位置
+            element.style.left = newLeft + 'px';
+            element.style.top = newTop + 'px';
+        }
+        
+        function onMouseUp() {
+            if (isDragging) {
+                // 拖动结束，保存位置
+                saveButtonPosition(element);
+                isClickCanceled = true;
+            } else {
+                // 如果没有拖动，检查是否是短时间点击
+                const clickDuration = Date.now() - clickStartTime;
+                if (clickDuration < 200) {
+                    // 短时间点击，认为是普通点击，恢复原来的定位
+                    const hasSavedPosition = applySavedPosition(element);
+                    if (!hasSavedPosition) {
+                        element.style.position = originalPosition;
+                        element.style.marginBottom = originalMargin;
+                        element.style.left = '';
+                        element.style.top = '';
+                        element.style.zIndex = '';
+                    }
+                }
+            }
+            
+            // 清理事件监听器
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            
+            // 重置状态
+            isDragging = false;
+        }
+    }
 
     // 发送消息的API函数
     function sendMsgApi(msg) {
@@ -185,7 +294,23 @@
                 elve = document.createElement("div");
                 elve.id = "elves";
                 elve.align = "right";
+                elve.style.marginBottom = '10px';
+                elve.style.position = 'relative';
+                
+                // 添加拖动功能
+                setupDragEventsWithClickCancel(elve);
+                
                 x.appendChild(elve);
+                
+                // 应用保存的位置
+                applySavedPosition(elve);
+            } else {
+                // 确保已添加拖动功能
+                if (!elve.hasDragEvents) {
+                    elve.hasDragEvents = true;
+                    setupDragEventsWithClickCancel(elve);
+                    applySavedPosition(elve);
+                }
             }
             
             // // 创建冰冰按钮
