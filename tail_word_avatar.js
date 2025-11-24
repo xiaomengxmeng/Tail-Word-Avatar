@@ -3,11 +3,12 @@
 // @namespace    http://tampermonkey.net/
 // @version      1.0.1
 // @description  整合单词功能和头像生成功能的精简版脚本   try to thank APTX-4869!
-// @author       (江户川-哀酱)APTX-4869
+// @author       ZeroDream
 // @match        https://fishpi.cn/*
 // @match        https://fishpi.cn/cr
 // @icon         https://fishpi.cn/images/favicon.png
 // @grant        GM_registerMenuCommand
+// @license MIT
 // ==/UserScript==
 
 (function () {
