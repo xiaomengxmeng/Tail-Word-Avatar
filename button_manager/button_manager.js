@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.15
+// @version      1.0.14
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -16,7 +16,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.15";
+    const version_us = "v1.0.14";
     // 按钮数据结构：{id, textContent, message, className , count}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
@@ -514,9 +514,27 @@ window.editButton = function(index) {
                     }
                 };
                 
+                // 鼠标进入时设置为拖动光标
+                buttonElement.onmouseenter = function() {
+                    if (!isDragging) {
+                        this.style.cursor = 'grab';
+                    }
+                };
+                
+                // 鼠标离开时恢复默认光标
+                buttonElement.onmouseleave = function() {
+                    if (!isDragging) {
+                        this.style.cursor = 'default';
+                    }
+                };
+                
                 // 鼠标按下事件
                 buttonElement.onmousedown = function(e) {
                     e.preventDefault();
+                    
+                    // 设置拖动中光标
+                    this.style.cursor = 'grabbing';
+                    document.body.style.cursor = 'grabbing';
                     
                     // 延迟执行点击事件，优先处理拖动
                     clickTimeout = setTimeout(() => {
@@ -534,9 +552,11 @@ window.editButton = function(index) {
                     buttonElement.style.position = 'absolute';
                     buttonElement.style.margin = '0'; // 移除边距
                     
-                    // 添加临时样式
+                    // 添加临时样式 - 增强拖动视觉反馈
                     buttonElement.style.opacity = '0.8';
                     buttonElement.style.zIndex = '101'; // 确保拖动时在最上层
+                    buttonElement.style.transform = 'scale(1.05)'; // 轻微放大
+                    buttonElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)'; // 增强阴影
                     
                     // 鼠标移动事件
                     function onMouseMove(e) {
@@ -568,6 +588,10 @@ window.editButton = function(index) {
                     function onMouseUp() {
                         // 恢复样式
                         buttonElement.style.opacity = '1';
+                        buttonElement.style.transform = 'scale(1)'; // 恢复原始大小
+                        buttonElement.style.boxShadow = ''; // 恢复原始阴影
+                        buttonElement.style.cursor = 'grab'; // 恢复拖动准备光标
+                        document.body.style.cursor = 'default'; // 恢复全局光标
                         
                         // 保存位置
                         if (isDragging) {
@@ -588,44 +612,55 @@ window.editButton = function(index) {
                     document.addEventListener('mousemove', onMouseMove);
                     document.addEventListener('mouseup', onMouseUp);
                 };
+                
+                // 初始化光标样式
+                buttonElement.style.cursor = 'grab';
             }
             
             // 根据按钮类型获取对应的样式
             function getButtonStyleByType(buttonType) {
-                // 基于fish_favor_system.js的样式设计
+                // 优化后的按钮基础样式，更接近好感管理按钮的风格
                 const baseStyle = `
                     padding: 6px 12px;
                     margin-right: 5px;
                     margin-bottom: 5px;
                     border-radius: 6px;
                     font-size: 14px;
-                    cursor: move;
+                    cursor: pointer;
                     transition: all 0.3s ease;
                     outline: none;
                     border: 1px solid;
                     position: relative;
                     z-index: 100;
+                    font-weight: 500;
+                    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
                 `;
                 
-                // 根据不同的按钮类型设置不同的颜色方案
+                // 根据不同的按钮类型设置优化后的颜色方案
                 switch(buttonType) {
                     case 'red':
                         return baseStyle + `
-                            background-color: #fff0f0;
+                            background-color: #fff1f0;
                             border-color: #ffccc7;
-                            color: #cf1322;
+                            color: #f5222d;
                         `;
                     case 'blue':
                         return baseStyle + `
                             background-color: #f0f8ff;
                             border-color: #b8e2ff;
-                            color: #0066cc;
+                            color: #1890ff;
+                        `;
+                    case 'green':
+                        return baseStyle + `
+                            background-color: #f6ffed;
+                            border-color: #b7eb8f;
+                            color: #52c41a;
                         `;
                     case 'gray':
                         return baseStyle + `
-                            background-color: #f5f5f5;
+                            background-color: #fafafa;
                             border-color: #d9d9d9;
-                            color: #595959;
+                            color: #8c8c8c;
                         `;
                     case 'orange':
                         return baseStyle + `
@@ -638,49 +673,74 @@ window.editButton = function(index) {
                         return baseStyle + `
                             background-color: #f0f8ff;
                             border-color: #b8e2ff;
-                            color: #0066cc;
+                            color: #1890ff;
                         `;
                 }
             }
             
             // 为按钮添加悬停效果
             function addHoverEffects(button, buttonType) {
-                // 悬停时的颜色变化
+                // 悬停时的优化效果，增加阴影和微缩放
+                const handleMouseEnter = function() {
+                    this.style.transform = 'translateY(-1px)';
+                    this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                };
+                
+                const handleMouseLeave = function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+                };
+                
+                // 添加通用的悬停效果
+                button.addEventListener('mouseenter', handleMouseEnter);
+                button.addEventListener('mouseleave', handleMouseLeave);
+                
+                // 根据不同的按钮类型设置特定的颜色变化
                 switch(buttonType) {
                     case 'red':
                         button.addEventListener('mouseenter', function() {
-                            this.style.backgroundColor = '#fff1f0';
-                            this.style.borderColor = '#ffa39e';
+                            this.style.backgroundColor = '#ff000020';
+                            this.style.borderColor = '#ff4d4f';
                         });
                         button.addEventListener('mouseleave', function() {
-                            this.style.backgroundColor = '#fff0f0';
+                            this.style.backgroundColor = '#fff1f0';
                             this.style.borderColor = '#ffccc7';
                         });
                         break;
                     case 'blue':
                         button.addEventListener('mouseenter', function() {
-                            this.style.backgroundColor = '#e0f0ff';
-                            this.style.borderColor = '#91d5ff';
+                            this.style.backgroundColor = '#e6f7ff';
+                            this.style.borderColor = '#69c0ff';
                         });
                         button.addEventListener('mouseleave', function() {
                             this.style.backgroundColor = '#f0f8ff';
                             this.style.borderColor = '#b8e2ff';
                         });
                         break;
+                    case 'green':
+                        button.addEventListener('mouseenter', function() {
+                            this.style.backgroundColor = '#f0fff4';
+                            this.style.borderColor = '#52c41a';
+                        });
+                        button.addEventListener('mouseleave', function() {
+                            this.style.backgroundColor = '#f6ffed';
+                            this.style.borderColor = '#b7eb8f';
+                        });
+                        break;
                     case 'gray':
                         button.addEventListener('mouseenter', function() {
-                            this.style.backgroundColor = '#fafafa';
+                            this.style.backgroundColor = '#f5f5f5';
                             this.style.borderColor = '#bfbfbf';
                         });
                         button.addEventListener('mouseleave', function() {
-                            this.style.backgroundColor = '#f5f5f5';
+                            this.style.backgroundColor = '#fafafa';
                             this.style.borderColor = '#d9d9d9';
                         });
                         break;
                     case 'orange':
                         button.addEventListener('mouseenter', function() {
-                            this.style.backgroundColor = '#fff2cc';
-                            this.style.borderColor = '#ffc53d';
+                            this.style.backgroundColor = '#fffbe6';
+                            this.style.borderColor = '#ffab00';
                         });
                         button.addEventListener('mouseleave', function() {
                             this.style.backgroundColor = '#fff7e6';
@@ -690,8 +750,8 @@ window.editButton = function(index) {
                     default:
                         // 默认使用蓝色的悬停效果
                         button.addEventListener('mouseenter', function() {
-                            this.style.backgroundColor = '#e0f0ff';
-                            this.style.borderColor = '#91d5ff';
+                            this.style.backgroundColor = '#e6f7ff';
+                            this.style.borderColor = '#69c0ff';
                         });
                         button.addEventListener('mouseleave', function() {
                             this.style.backgroundColor = '#f0f8ff';
