@@ -20,7 +20,7 @@
     // 好感度数据结构
     // - id: 鱼油唯一标识符
     // - name: 鱼油名称
-    // - favor: 好感度值(0-100)
+    // - favor: 好感度值(-100到100)
     // - note: 备注信息
     let fishFavorConfig = [];
 
@@ -494,7 +494,7 @@
 
         // 初始好感度输入
         const favorLabel = document.createElement('div');
-        favorLabel.textContent = '初始好感度 (0-100)';
+        favorLabel.textContent = '初始好感度 (-100到100)';
         favorLabel.style.marginBottom = '8px';
         favorLabel.style.fontWeight = '500';
         favorLabel.style.color = '#555';
@@ -525,9 +525,9 @@
         favorInput.addEventListener('blur', () => {
             favorInput.style.borderColor = '#d9d9d9';
             favorInput.style.boxShadow = 'none';
-            // 确保好感度值在0-100之间
-            if (favorInput.value < 0) favorInput.value = 0;
-            if (favorInput.value > 100) favorInput.value = 100;
+            // 确保好感度值在-100到100之间
+              if (favorInput.value < -100) favorInput.value = -100;
+              if (favorInput.value > 100) favorInput.value = 100;
         });
 
         addFishSection.appendChild(favorInput);
@@ -1439,7 +1439,7 @@
 
         // 好感度输入
         const favorLabel = document.createElement('div');
-        favorLabel.textContent = '好感度 (0-100)';
+        favorLabel.textContent = '好感度 (-100到100)';
         favorLabel.style.marginBottom = '8px';
         favorLabel.style.fontWeight = '500';
         favorLabel.style.color = '#555';
@@ -1554,7 +1554,7 @@
 
             // 更新鱼油信息
             fish.name = newName;
-            fish.favor = Math.max(0, Math.min(100, newFavor)); // 确保在0-100之间
+            fish.favor = Math.max(-100, Math.min(100, newFavor)); // 确保在-100到100之间
             // 移除旧的note字段（如果存在）
             if ('note' in fish) {
                 delete fish.note;
@@ -1647,7 +1647,7 @@
 
                         // 验证鱼油数据结构
                         const isValid = importData.fishList.every(fish => 
-                            fish.name && typeof fish.favor === 'number' && fish.favor >= 0 && fish.favor <= 100
+                            fish.name && typeof fish.favor === 'number' && fish.favor >= -100 && fish.favor <= 100
                         );
 
                         if (!isValid) {
@@ -1656,12 +1656,51 @@
                         }
 
                         // 更新鱼油配置
-                        fishFavorConfig = importData.fishList.map(fish => ({
-                            id: fish.id || generateUniqueId(),
-                            name: fish.name,
-                            favor: fish.favor,
-                            note: fish.note || ''
-                        }));
+                        fishFavorConfig = importData.fishList.map(fish => {
+                            // 基础对象
+                            const newFish = {
+                                id: fish.id || generateUniqueId(),
+                                name: fish.name,
+                                favor: fish.favor
+                            };
+                            
+                            // 处理备注 - 数据迁移逻辑，与loadFavorConfig保持一致
+                            // 如果有notes数组，直接使用
+                            if (fish.notes && Array.isArray(fish.notes)) {
+                                newFish.notes = fish.notes;
+                            } 
+                            // 如果只有旧的note字段，转换为notes数组格式
+                            else if ('note' in fish && fish.note && fish.note.trim()) {
+                                const notesArray = [];
+                                // 解析现有的备注，提取时间戳（如果有）
+                                const noteRegex = /^\[(.*?)\]\s*(.*)$/;
+                                const match = fish.note.match(noteRegex);
+                                
+                                let timestamp, content;
+                                if (match) {
+                                    // 如果备注已经有时间戳格式
+                                    timestamp = match[1];
+                                    content = match[2];
+                                } else {
+                                    // 没有时间戳，使用当前时间
+                                    timestamp = new Date().toLocaleString('zh-CN');
+                                    content = fish.note;
+                                }
+                                
+                                notesArray.push({
+                                    timestamp: timestamp,
+                                    content: content,
+                                    timestampObj: new Date(timestamp)
+                                });
+                                
+                                newFish.notes = notesArray;
+                            } else {
+                                // 没有备注，初始化空数组
+                                newFish.notes = [];
+                            }
+                            
+                            return newFish;
+                        });
 
                         // 保存并更新UI
                         saveFavorConfig();
