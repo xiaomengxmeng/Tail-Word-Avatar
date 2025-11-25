@@ -16,7 +16,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.15";
+    const version_us = "v1.0.16";
     // 按钮数据结构：{id, textContent, message, className , count}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
@@ -438,7 +438,7 @@ window.editButton = function(index) {
                 return;
             }
 
-            // 创建按钮容器
+            // 创建或获取按钮容器（仅用于初始定位参考，不再作为按钮的父元素）
                 var buttonContainer = document.getElementById("custom-buttons-container");
                 if (!buttonContainer) {
                     buttonContainer = document.createElement("div");
@@ -446,32 +446,36 @@ window.editButton = function(index) {
                     buttonContainer.align = "right";
                     buttonContainer.style.marginBottom = "10px"; // 保留原有的底部边距
                     
-                    // 设置容器样式以支持按钮的绝对定位拖动
-                    buttonContainer.style.position = 'relative'; // 相对定位，为绝对定位的子元素提供参考
-                    buttonContainer.style.display = 'block'; // 块级元素，确保正确布局
-                    buttonContainer.style.width = '100%'; // 宽度自适应父容器
-                    buttonContainer.style.minHeight = '50px'; // 确保至少有一定高度
-                    buttonContainer.style.zIndex = '99'; // 稍低于可拖动按钮
+                    // 设置容器样式（仅作为定位参考点）
+                    buttonContainer.style.position = 'relative';
+                    buttonContainer.style.display = 'block';
+                    buttonContainer.style.width = '100%';
+                    buttonContainer.style.minHeight = '50px';
+                    buttonContainer.style.zIndex = '99';
                     buttonContainer.style.backgroundColor = 'transparent';
                     buttonContainer.style.border = 'none';
-                    buttonContainer.style.padding = '0'; // 移除内边距，避免影响按钮定位
-                    buttonContainer.style.cursor = 'default'; // 默认鼠标样式
+                    buttonContainer.style.padding = '0';
+                    buttonContainer.style.cursor = 'default';
                     
-                    // 保持原有的插入方式，添加到回复区域内部
+                    // 添加到回复区域，作为初始定位参考
                     x.appendChild(buttonContainer);
-                    
-                    // 移除容器的拖动功能，因为我们希望按钮独立拖动
                 } else {
-                    // 清空现有按钮，避免重复添加
-                    buttonContainer.innerHTML = '';
                     // 确保容器样式正确
                     buttonContainer.style.position = 'relative';
                     buttonContainer.style.display = 'block';
                     buttonContainer.style.width = '100%';
                     buttonContainer.style.padding = '0';
                 }
+                
+                // 先移除所有现有的自定义按钮，避免重复
+                const existingButtons = document.querySelectorAll('.custom-button');
+                existingButtons.forEach(btn => {
+                    if (btn.parentNode === document.body) {
+                        document.body.removeChild(btn);
+                    }
+                });
             
-            // 为每个按钮应用保存的位置
+            // 为每个按钮应用保存的位置，并返回是否有保存的位置
             function applyButtonPosition(buttonId, buttonElement) {
                 try {
                     const positionKey = 'button_position_' + buttonId;
@@ -482,9 +486,12 @@ window.editButton = function(index) {
                         buttonElement.style.left = position.left + 'px';
                         buttonElement.style.top = position.top + 'px';
                         buttonElement.style.margin = '0'; // 移除边距，使用绝对定位
+                        return true; // 返回true表示有保存的位置并已应用
                     }
+                    return false; // 返回false表示没有保存的位置
                 } catch (e) {
                     console.error('应用按钮位置失败:', e);
+                    return false; // 出错时也返回false
                 }
             }
             
@@ -527,6 +534,7 @@ window.editButton = function(index) {
                 let isDragging = false;
                 let offsetX, offsetY;
                 let hasMoved = false;
+                const originalZIndex = element.style.zIndex; // 保存原始z-index
                 
                 // 计算鼠标相对于元素左上角的偏移量
                 const elementRect = element.getBoundingClientRect();
@@ -539,9 +547,12 @@ window.editButton = function(index) {
                 element.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)'; // 增强阴影
                 element.style.cursor = 'grabbing';
                 document.body.style.cursor = 'grabbing';
+                element.style.zIndex = '1000'; // 临时提升z-index，确保拖动时在最上层
                 
                 // 鼠标移动事件处理
                 function handleMouseMove(e) {
+                    e.stopPropagation(); // 阻止事件冒泡
+                    
                     // 如果移动超过5px，则视为拖动
                     if (!hasMoved) {
                         const movedX = Math.abs(e.clientX - (elementRect.left + offsetX));
@@ -568,7 +579,9 @@ window.editButton = function(index) {
                 }
                 
                 // 鼠标释放事件处理
-                function handleMouseUp() {
+                function handleMouseUp(e) {
+                    e.stopPropagation(); // 阻止事件冒泡
+                    
                     // 移除事件监听器
                     document.removeEventListener('mousemove', handleMouseMove);
                     document.removeEventListener('mouseup', handleMouseUp);
@@ -579,6 +592,7 @@ window.editButton = function(index) {
                     element.style.boxShadow = ''; // 恢复原始阴影
                     element.style.cursor = 'grab';
                     document.body.style.cursor = 'default';
+                    element.style.zIndex = originalZIndex; // 恢复原始z-index
                     
                     // 如果有拖动，保存位置
                     if (isDragging) {
@@ -589,6 +603,9 @@ window.editButton = function(index) {
                 // 添加鼠标移动和释放事件监听器到document
                 document.addEventListener('mousemove', handleMouseMove);
                 document.addEventListener('mouseup', handleMouseUp);
+                
+                // 阻止默认行为
+                event.preventDefault();
                 
                 // 防止文本选中
                 event.preventDefault();
@@ -776,16 +793,36 @@ window.editButton = function(index) {
                 }
             }
             
+            // 创建自动计算初始位置的函数
+            function calculateInitialPosition(index, totalButtons) {
+                const containerRect = buttonContainer.getBoundingClientRect();
+                const buttonWidth = 80; // 预估按钮宽度
+                const buttonHeight = 36; // 预估按钮高度
+                const spacing = 10; // 按钮间距
+                
+                // 计算初始位置，基于容器位置，并避免堆叠
+                const rows = Math.ceil(totalButtons / 4); // 每行最多4个按钮
+                const row = Math.floor(index / 4);
+                const col = index % 4;
+                
+                // 从容器右侧开始排列
+                const left = containerRect.right - (col + 1) * (buttonWidth + spacing) + window.scrollX;
+                const top = containerRect.top + row * (buttonHeight + spacing) + window.scrollY;
+                
+                return { left, top };
+            }
+            
             // 创建每个按钮
-            buttonsConfig.forEach(button => {
+            buttonsConfig.forEach((button, index) => {
                 var btn = document.createElement('button');
                 btn.id = button.id;
                 btn.textContent = button.textContent;
-                btn.className = button.className || 'blue'; // 默认使用蓝色样式
+                btn.className = 'custom-button ' + (button.className || 'blue'); // 添加custom-button类以便后续选择
                 
-                // 应用根据类型的样式
-                const buttonType = btn.className;
-                btn.setAttribute('style', getButtonStyleByType(buttonType));
+                // 应用根据类型的样式，确保按钮是绝对定位
+                const buttonType = button.className || 'blue';
+                const baseStyle = getButtonStyleByType(buttonType);
+                btn.setAttribute('style', baseStyle + '; position: absolute; z-index: 100;');
                 
                 btn.onclick = function() {
                     sendMsgApi(button.message);
@@ -797,33 +834,48 @@ window.editButton = function(index) {
                 // 添加悬停效果
                 addHoverEffects(btn, buttonType);
                 
-                // 添加到容器
-                buttonContainer.appendChild(btn);
-                
-                // 应用保存的位置
-                applyButtonPosition(button.id, btn);
+                // 应用保存的位置，如果没有保存的位置则使用自动计算的位置
+                const hasSavedPosition = applyButtonPosition(button.id, btn);
+                if (!hasSavedPosition) {
+                    const position = calculateInitialPosition(index, buttonsConfig.length);
+                    btn.style.left = position.left + 'px';
+                    btn.style.top = position.top + 'px';
+                }
                 
                 // 设置拖动功能
                 setupButtonDrag(button.id, btn);
+                
+                // 将按钮添加到document.body而不是buttonContainer
+                document.body.appendChild(btn);
             });
             
             // 添加管理按钮
             var manageButton = document.createElement('button');
             manageButton.id = 'button-manager-button';
             manageButton.textContent = '管理';
-            manageButton.className = 'blue';
+            manageButton.className = 'custom-button blue';
             
-            // 应用与其他按钮一致的样式
-            manageButton.setAttribute('style', getButtonStyleByType('blue'));
+            // 应用与其他按钮一致的样式，确保按钮是绝对定位
+            manageButton.setAttribute('style', getButtonStyleByType('blue') + '; position: absolute; z-index: 100;');
             
             // 添加悬停效果
             addHoverEffects(manageButton, 'blue');
+            
+            // 为管理按钮计算初始位置（放在其他按钮上方）
+            const manageButtonPosition = calculateInitialPosition(buttonsConfig.length, buttonsConfig.length + 1);
+            manageButton.style.left = manageButtonPosition.left + 'px';
+            manageButton.style.top = manageButtonPosition.top + 'px';
+            
+            // 先尝试应用保存的位置
+            applyButtonPosition('button-manager-button', manageButton);
             
             // 设置拖动功能
             setupButtonDrag('button-manager-button', manageButton);
             
             manageButton.onclick = openButtonManagerPanel;
-            buttonContainer.appendChild(manageButton);
+            
+            // 将管理按钮添加到document.body而不是buttonContainer
+            document.body.appendChild(manageButton);
             
         } catch (e) {
             console.error('创建按钮失败:', e);
