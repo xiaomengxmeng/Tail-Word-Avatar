@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.17
+// @version      1.0.18
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -16,7 +16,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.17";
+    const version_us = "v1.0.18";
     // 按钮数据结构：{id, textContent, message, className , count}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
@@ -498,14 +498,15 @@ window.editButton = function(index) {
             }
             
             // 保存按钮位置
-            function saveButtonPosition(buttonId, buttonElement) {
+            function saveButtonPosition(element) {
                 try {
-                    const positionKey = 'button_position_' + buttonId;
+                    const positionKey = 'button_position_' + element.id;
                     const position = {
-                        left: parseInt(buttonElement.style.left || 0),
-                        top: parseInt(buttonElement.style.top || 0)
+                        left: parseInt(element.style.left || 0),
+                        top: parseInt(element.style.top || 0)
                     };
                     localStorage.setItem(positionKey, JSON.stringify(position));
+                    console.log('按钮位置保存成功:', position);
                 } catch (e) {
                     console.error('保存按钮位置失败:', e);
                 }
@@ -531,12 +532,11 @@ window.editButton = function(index) {
                 }
             }
             
-            // 设置拖动事件（带点击取消功能） - 参考fish_favor_system.js实现
-            function setupDragEventsWithClickCancel(element, dragElement, clickTimeout, buttonId) {
+            // 设置拖动事件（带点击取消功能）
+            function setupDragEventsWithClickCancel(element, dragElement, clickTimeout) {
                 let isDragging = false;
                 let offsetX, offsetY;
                 let hasMoved = false;
-                const originalZIndex = element.style.zIndex; // 保存原始z-index
                 
                 // 计算鼠标相对于元素左上角的偏移量
                 const elementRect = element.getBoundingClientRect();
@@ -545,16 +545,9 @@ window.editButton = function(index) {
                 
                 // 改变拖动过程中的样式
                 element.style.opacity = '0.8';
-                element.style.transform = 'scale(1.05)'; // 轻微放大
-                element.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)'; // 增强阴影
-                element.style.cursor = 'grabbing';
-                document.body.style.cursor = 'grabbing';
-                element.style.zIndex = '1000'; // 临时提升z-index，确保拖动时在最上层
                 
                 // 鼠标移动事件处理
                 function handleMouseMove(e) {
-                    e.stopPropagation(); // 阻止事件冒泡
-                    
                     // 如果移动超过5px，则视为拖动
                     if (!hasMoved) {
                         const movedX = Math.abs(e.clientX - (elementRect.left + offsetX));
@@ -581,24 +574,17 @@ window.editButton = function(index) {
                 }
                 
                 // 鼠标释放事件处理
-                function handleMouseUp(e) {
-                    e.stopPropagation(); // 阻止事件冒泡
-                    
+                function handleMouseUp() {
                     // 移除事件监听器
                     document.removeEventListener('mousemove', handleMouseMove);
                     document.removeEventListener('mouseup', handleMouseUp);
                     
                     // 恢复样式
                     element.style.opacity = '1';
-                    element.style.transform = 'scale(1)'; // 恢复原始大小
-                    element.style.boxShadow = ''; // 恢复原始阴影
-                    element.style.cursor = 'grab';
-                    document.body.style.cursor = 'default';
-                    element.style.zIndex = originalZIndex; // 恢复原始z-index
                     
                     // 如果有拖动，保存位置
                     if (isDragging) {
-                        saveButtonPosition(buttonId, element);
+                        saveButtonPosition(element);
                     }
                 }
                 
@@ -606,14 +592,11 @@ window.editButton = function(index) {
                 document.addEventListener('mousemove', handleMouseMove);
                 document.addEventListener('mouseup', handleMouseUp);
                 
-                // 阻止默认行为
-                event.preventDefault();
-                
                 // 防止文本选中
                 event.preventDefault();
             }
             
-            // 设置按钮独立拖动事件 - 参考fish_favor_system.js实现
+            // 设置按钮独立拖动事件
             function setupButtonDrag(buttonId, buttonElement) {
                 // 确保按钮初始样式正确
                 buttonElement.style.position = 'absolute';
@@ -621,6 +604,7 @@ window.editButton = function(index) {
                 buttonElement.style.zIndex = '100';
                 buttonElement.style.cursor = 'grab';
                 buttonElement.style.userSelect = 'none';
+                buttonElement.id = buttonId; // 确保元素有id
                 
                 // 保存原始点击处理
                 const originalOnClick = buttonElement.onclick;
@@ -637,7 +621,7 @@ window.editButton = function(index) {
                         }, 200);
                         
                         // 设置拖动事件，拖动时取消点击
-                        setupDragEventsWithClickCancel(buttonElement, buttonElement, clickTimeout, buttonId);
+                        setupDragEventsWithClickCancel(buttonElement, buttonElement, clickTimeout);
                     }
                 };
                 
@@ -914,19 +898,7 @@ window.editButton = function(index) {
         }
     }
     
-    // 保存按钮位置到localStorage
-    function saveButtonPosition(element) {
-        try {
-            const position = {
-                left: parseInt(element.style.left || 0),
-                top: parseInt(element.style.top || 0)
-            };
-            localStorage.setItem(BUTTON_POSITION_KEY, JSON.stringify(position));
-            console.log('按钮位置保存成功:', position);
-        } catch (e) {
-            console.error('保存按钮位置失败:', e);
-        }
-    }
+    // 注：saveButtonPosition函数已在文件上方定义
     
     // 设置拖动事件（带点击取消功能）
     function setupDragEventsWithClickCancel(element) {
