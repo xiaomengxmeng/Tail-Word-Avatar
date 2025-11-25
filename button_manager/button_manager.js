@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.18
+// @version      1.0.14
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -16,12 +16,10 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.18";
+    const version_us = "v1.0.14";
     // 按钮数据结构：{id, textContent, message, className , count}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
-    const TEST_MODE_KEY = 'buttonTestMode';
-    let isTestMode = false;
     const DEFAULT_BUTTONS = [
         { id: 'default-bingbing', textContent: '打劫', message: '冰冰 去打劫', className: 'red', count: 0 },
         { id: 'default-ge', textContent: '鸽', message: '鸽 行行好吧', className: 'red', count: 0 }
@@ -440,7 +438,7 @@ window.editButton = function(index) {
                 return;
             }
 
-            // 创建或获取按钮容器（仅用于初始定位参考，不再作为按钮的父元素）
+            // 创建按钮容器
                 var buttonContainer = document.getElementById("custom-buttons-container");
                 if (!buttonContainer) {
                     buttonContainer = document.createElement("div");
@@ -448,427 +446,58 @@ window.editButton = function(index) {
                     buttonContainer.align = "right";
                     buttonContainer.style.marginBottom = "10px"; // 保留原有的底部边距
                     
-                    // 设置容器样式（仅作为定位参考点）
-                    buttonContainer.style.position = 'relative';
-                    buttonContainer.style.display = 'block';
-                    buttonContainer.style.width = '100%';
-                    buttonContainer.style.minHeight = '50px';
-                    buttonContainer.style.zIndex = '99';
+                    // 为拖动功能添加必要的CSS样式
+                    buttonContainer.style.position = 'relative'; // 使用相对定位，保持原有布局
+                    buttonContainer.style.zIndex = '100';
                     buttonContainer.style.backgroundColor = 'transparent';
                     buttonContainer.style.border = 'none';
-                    buttonContainer.style.padding = '0';
-                    buttonContainer.style.cursor = 'default';
+                    buttonContainer.style.padding = '5px';
+                    buttonContainer.style.cursor = 'move'; // 默认设置整个容器可拖动
                     
-                    // 添加到回复区域，作为初始定位参考
+                    // 保持原有的插入方式，添加到回复区域内部
                     x.appendChild(buttonContainer);
+                    
+                    // 应用保存的位置
+                    applySavedPosition(buttonContainer);
+                    
+                    // 添加拖动事件到容器
+                    buttonContainer.addEventListener('mousedown', function(e) {
+                        // 只有当点击的是容器本身而不是内部按钮时才触发拖动
+                        if (e.target === buttonContainer) {
+                            // 拖动开始时，临时切换为绝对定位
+                            buttonContainer.style.position = 'absolute';
+                            setupDragEventsWithClickCancel(buttonContainer);
+                        }
+                    });
                 } else {
-                    // 确保容器样式正确
-                    buttonContainer.style.position = 'relative';
-                    buttonContainer.style.display = 'block';
-                    buttonContainer.style.width = '100%';
-                    buttonContainer.style.padding = '0';
+                    // 清空现有按钮，避免重复添加
+                    buttonContainer.innerHTML = '';
                 }
-                
-                // 先移除所有现有的自定义按钮，避免重复
-                const existingButtons = document.querySelectorAll('.custom-button');
-                existingButtons.forEach(btn => {
-                    if (btn.parentNode === document.body) {
-                        document.body.removeChild(btn);
-                    }
-                });
-            
-            // 为每个按钮应用保存的位置，并返回是否有保存的位置
-            function applyButtonPosition(buttonId, buttonElement) {
-                try {
-                    const positionKey = 'button_position_' + buttonId;
-                    const savedPosition = localStorage.getItem(positionKey);
-                    if (savedPosition) {
-                        const position = JSON.parse(savedPosition);
-                        buttonElement.style.position = 'absolute';
-                        buttonElement.style.left = position.left + 'px';
-                        buttonElement.style.top = position.top + 'px';
-                        buttonElement.style.margin = '0'; // 移除边距，使用绝对定位
-                        return true; // 返回true表示有保存的位置并已应用
-                    }
-                    return false; // 返回false表示没有保存的位置
-                } catch (e) {
-                    console.error('应用按钮位置失败:', e);
-                    return false; // 出错时也返回false
-                }
-            }
-            
-            // 保存按钮位置
-            function saveButtonPosition(element) {
-                try {
-                    const positionKey = 'button_position_' + element.id;
-                    const position = {
-                        left: parseInt(element.style.left || 0),
-                        top: parseInt(element.style.top || 0)
-                    };
-                    localStorage.setItem(positionKey, JSON.stringify(position));
-                    console.log('按钮位置保存成功:', position);
-                } catch (e) {
-                    console.error('保存按钮位置失败:', e);
-                }
-            }
-            
-            // 重置所有按钮位置
-            function resetAllButtonsPosition() {
-                try {
-                    // 清除localStorage中所有按钮位置数据
-                    for (let key in localStorage) {
-                        if (key.startsWith('button_position_')) {
-                            localStorage.removeItem(key);
-                        }
-                    }
-                    
-                    // 重新创建按钮以应用默认位置
-                    createButtons();
-                    
-                    console.log('所有按钮位置已重置');
-                } catch (e) {
-                    console.error('重置按钮位置失败:', e);
-                    showNotification('重置失败，请刷新页面重试', 'error');
-                }
-            }
-            
-            // 设置拖动事件（带点击取消功能）
-            function setupDragEventsWithClickCancel(element, dragElement, clickTimeout) {
-                let isDragging = false;
-                let offsetX, offsetY;
-                let hasMoved = false;
-                
-                // 计算鼠标相对于元素左上角的偏移量
-                const elementRect = element.getBoundingClientRect();
-                offsetX = event.clientX - elementRect.left;
-                offsetY = event.clientY - elementRect.top;
-                
-                // 改变拖动过程中的样式
-                element.style.opacity = '0.8';
-                
-                // 鼠标移动事件处理
-                function handleMouseMove(e) {
-                    // 如果移动超过5px，则视为拖动
-                    if (!hasMoved) {
-                        const movedX = Math.abs(e.clientX - (elementRect.left + offsetX));
-                        const movedY = Math.abs(e.clientY - (elementRect.top + offsetY));
-                        hasMoved = (movedX > 5 || movedY > 5);
-                        
-                        // 如果开始拖动，取消点击事件
-                        if (hasMoved && clickTimeout) {
-                            clearTimeout(clickTimeout);
-                        }
-                    }
-                    
-                    if (hasMoved) {
-                        isDragging = true;
-                        
-                        // 计算新位置（考虑滚动）
-                        const left = e.clientX - offsetX + window.scrollX;
-                        const top = e.clientY - offsetY + window.scrollY;
-                        
-                        // 应用新位置
-                        element.style.left = left + 'px';
-                        element.style.top = top + 'px';
-                    }
-                }
-                
-                // 鼠标释放事件处理
-                function handleMouseUp() {
-                    // 移除事件监听器
-                    document.removeEventListener('mousemove', handleMouseMove);
-                    document.removeEventListener('mouseup', handleMouseUp);
-                    
-                    // 恢复样式
-                    element.style.opacity = '1';
-                    
-                    // 如果有拖动，保存位置
-                    if (isDragging) {
-                        saveButtonPosition(element);
-                    }
-                }
-                
-                // 添加鼠标移动和释放事件监听器到document
-                document.addEventListener('mousemove', handleMouseMove);
-                document.addEventListener('mouseup', handleMouseUp);
-                
-                // 防止文本选中
-                event.preventDefault();
-            }
-            
-            // 设置按钮独立拖动事件
-            function setupButtonDrag(buttonId, buttonElement) {
-                // 确保按钮初始样式正确
-                buttonElement.style.position = 'absolute';
-                buttonElement.style.margin = '0';
-                buttonElement.style.zIndex = '100';
-                buttonElement.style.cursor = 'grab';
-                buttonElement.style.userSelect = 'none';
-                buttonElement.id = buttonId; // 确保元素有id
-                
-                // 保存原始点击处理
-                const originalOnClick = buttonElement.onclick;
-                
-                // 移除原有的onclick处理，避免重复触发
-                buttonElement.onclick = null;
-                
-                // 重写mousedown事件，处理拖动和点击
-                buttonElement.onmousedown = function(e) {
-                    if (e.target === buttonElement) {
-                        // 延迟执行点击事件，优先处理拖动
-                        const clickTimeout = setTimeout(() => {
-                            if (originalOnClick) originalOnClick();
-                        }, 200);
-                        
-                        // 设置拖动事件，拖动时取消点击
-                        setupDragEventsWithClickCancel(buttonElement, buttonElement, clickTimeout);
-                    }
-                };
-                
-                // 鼠标进入时设置为拖动光标
-                buttonElement.onmouseenter = function() {
-                    this.style.cursor = 'grab';
-                };
-                
-                // 鼠标离开时恢复默认光标
-                buttonElement.onmouseleave = function() {
-                    this.style.cursor = 'default';
-                };
-            }
-            
-            // 根据按钮类型获取对应的样式
-            function getButtonStyleByType(buttonType) {
-                // 优化后的按钮基础样式，更接近好感管理按钮的风格
-                const baseStyle = `
-                    padding: 6px 12px;
-                    margin: 0; // 移除边距，避免影响绝对定位
-                    border-radius: 6px;
-                    font-size: 14px;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    outline: none;
-                    border: 1px solid;
-                    position: absolute; // 设置为绝对定位
-                    z-index: 100;
-                    font-weight: 500;
-                    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-                    user-select: none; // 防止拖动时选中文本
-                `;
-                
-                // 根据不同的按钮类型设置优化后的颜色方案
-                switch(buttonType) {
-                    case 'red':
-                        return baseStyle + `
-                            background-color: #fff1f0;
-                            border-color: #ffccc7;
-                            color: #f5222d;
-                        `;
-                    case 'blue':
-                        return baseStyle + `
-                            background-color: #f0f8ff;
-                            border-color: #b8e2ff;
-                            color: #1890ff;
-                        `;
-                    case 'green':
-                        return baseStyle + `
-                            background-color: #f6ffed;
-                            border-color: #b7eb8f;
-                            color: #52c41a;
-                        `;
-                    case 'gray':
-                        return baseStyle + `
-                            background-color: #fafafa;
-                            border-color: #d9d9d9;
-                            color: #8c8c8c;
-                        `;
-                    case 'orange':
-                        return baseStyle + `
-                            background-color: #fff7e6;
-                            border-color: #ffd591;
-                            color: #fa8c16;
-                        `;
-                    default:
-                        // 默认使用蓝色样式，与fish_favor_system.js中的主按钮样式一致
-                        return baseStyle + `
-                            background-color: #f0f8ff;
-                            border-color: #b8e2ff;
-                            color: #1890ff;
-                        `;
-                }
-            }
-            
-            // 为按钮添加悬停效果
-            function addHoverEffects(button, buttonType) {
-                // 悬停时的优化效果，增加阴影和微缩放
-                const handleMouseEnter = function() {
-                    this.style.transform = 'translateY(-1px)';
-                    this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                };
-                
-                const handleMouseLeave = function() {
-                    this.style.transform = 'translateY(0)';
-                    this.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
-                };
-                
-                // 添加通用的悬停效果
-                button.addEventListener('mouseenter', handleMouseEnter);
-                button.addEventListener('mouseleave', handleMouseLeave);
-                
-                // 根据不同的按钮类型设置特定的颜色变化
-                switch(buttonType) {
-                    case 'red':
-                        button.addEventListener('mouseenter', function() {
-                            this.style.backgroundColor = '#ff000020';
-                            this.style.borderColor = '#ff4d4f';
-                        });
-                        button.addEventListener('mouseleave', function() {
-                            this.style.backgroundColor = '#fff1f0';
-                            this.style.borderColor = '#ffccc7';
-                        });
-                        break;
-                    case 'blue':
-                        button.addEventListener('mouseenter', function() {
-                            this.style.backgroundColor = '#e6f7ff';
-                            this.style.borderColor = '#69c0ff';
-                        });
-                        button.addEventListener('mouseleave', function() {
-                            this.style.backgroundColor = '#f0f8ff';
-                            this.style.borderColor = '#b8e2ff';
-                        });
-                        break;
-                    case 'green':
-                        button.addEventListener('mouseenter', function() {
-                            this.style.backgroundColor = '#f0fff4';
-                            this.style.borderColor = '#52c41a';
-                        });
-                        button.addEventListener('mouseleave', function() {
-                            this.style.backgroundColor = '#f6ffed';
-                            this.style.borderColor = '#b7eb8f';
-                        });
-                        break;
-                    case 'gray':
-                        button.addEventListener('mouseenter', function() {
-                            this.style.backgroundColor = '#f5f5f5';
-                            this.style.borderColor = '#bfbfbf';
-                        });
-                        button.addEventListener('mouseleave', function() {
-                            this.style.backgroundColor = '#fafafa';
-                            this.style.borderColor = '#d9d9d9';
-                        });
-                        break;
-                    case 'orange':
-                        button.addEventListener('mouseenter', function() {
-                            this.style.backgroundColor = '#fffbe6';
-                            this.style.borderColor = '#ffab00';
-                        });
-                        button.addEventListener('mouseleave', function() {
-                            this.style.backgroundColor = '#fff7e6';
-                            this.style.borderColor = '#ffd591';
-                        });
-                        break;
-                    default:
-                        // 默认使用蓝色的悬停效果
-                        button.addEventListener('mouseenter', function() {
-                            this.style.backgroundColor = '#e6f7ff';
-                            this.style.borderColor = '#69c0ff';
-                        });
-                        button.addEventListener('mouseleave', function() {
-                            this.style.backgroundColor = '#f0f8ff';
-                            this.style.borderColor = '#b8e2ff';
-                        });
-                }
-            }
-            
-            // 创建自动计算初始位置的函数
-            function calculateInitialPosition(index, totalButtons) {
-                const containerRect = buttonContainer.getBoundingClientRect();
-                const buttonWidth = 80; // 预估按钮宽度
-                const buttonHeight = 36; // 预估按钮高度
-                const spacing = 10; // 按钮间距
-                
-                // 计算初始位置，基于容器位置，并避免堆叠
-                const rows = Math.ceil(totalButtons / 4); // 每行最多4个按钮
-                const row = Math.floor(index / 4);
-                const col = index % 4;
-                
-                // 从容器右侧开始排列
-                const left = containerRect.right - (col + 1) * (buttonWidth + spacing) + window.scrollX;
-                const top = containerRect.top + row * (buttonHeight + spacing) + window.scrollY;
-                
-                return { left, top };
-            }
             
             // 创建每个按钮
-            buttonsConfig.forEach((button, index) => {
+            buttonsConfig.forEach(button => {
                 var btn = document.createElement('button');
-                btn.id = button.id;
-                btn.textContent = button.textContent;
-                btn.className = 'custom-button ' + (button.className || 'blue'); // 添加custom-button类以便后续选择
-                
-                // 应用根据类型的样式，确保按钮是绝对定位
-                const buttonType = button.className || 'blue';
-                const baseStyle = getButtonStyleByType(buttonType);
-                btn.setAttribute('style', baseStyle + '; position: absolute; z-index: 100;');
-                
-                btn.onclick = function() {
-                    // 添加测试模式判断
-                    if (isTestMode) {
-                        // 测试模式下显示反馈信息
-                        showNotification(`测试模式: 不会发送消息 - "${button.message}"`, 'blue');
-                    } else {
-                        // 非测试模式下正常发送消息
-                        sendMsgApi(button.message);
-                    }
-                    // 增加点击次数
-                    button.count++;
-                    saveButtonsConfig();
-                };
-                
-                // 添加悬停效果
-                addHoverEffects(btn, buttonType);
-                
-                // 应用保存的位置，如果没有保存的位置则使用自动计算的位置
-                const hasSavedPosition = applyButtonPosition(button.id, btn);
-                if (!hasSavedPosition) {
-                    const position = calculateInitialPosition(index, buttonsConfig.length);
-                    btn.style.left = position.left + 'px';
-                    btn.style.top = position.top + 'px';
-                }
-                
-                // 设置拖动功能
-                setupButtonDrag(button.id, btn);
-                
-                // 将按钮添加到document.body而不是buttonContainer
-                document.body.appendChild(btn);
+            btn.id = button.id;
+            btn.textContent = button.textContent;
+            btn.className = button.className || 'red';
+            btn.setAttribute('style', 'margin-right:5px; margin-bottom:5px; padding:4px 8px; border-radius: 4px;');
+            btn.onclick = function() {
+                sendMsgApi(button.message);
+                // 增加点击次数
+                button.count++;
+                saveButtonsConfig();
+            };
+            buttonContainer.appendChild(btn);
             });
             
             // 添加管理按钮
             var manageButton = document.createElement('button');
             manageButton.id = 'button-manager-button';
             manageButton.textContent = '管理';
-            manageButton.className = 'custom-button blue';
-            
-            // 应用与其他按钮一致的样式，确保按钮是绝对定位
-            manageButton.setAttribute('style', getButtonStyleByType('blue') + '; position: absolute; z-index: 100;');
-            
-            // 添加悬停效果
-            addHoverEffects(manageButton, 'blue');
-            
-            // 为管理按钮计算初始位置（放在其他按钮上方）
-            const manageButtonPosition = calculateInitialPosition(buttonsConfig.length, buttonsConfig.length + 1);
-            manageButton.style.left = manageButtonPosition.left + 'px';
-            manageButton.style.top = manageButtonPosition.top + 'px';
-            
-            // 先尝试应用保存的位置
-            applyButtonPosition('button-manager-button', manageButton);
-            
-            // 设置拖动功能
-            setupButtonDrag('button-manager-button', manageButton);
-            
+            manageButton.className = 'blue';
+            manageButton.setAttribute('style', 'margin-right:5px; margin-bottom:5px; padding:4px 8px;');
             manageButton.onclick = openButtonManagerPanel;
-            
-            // 将管理按钮添加到document.body而不是buttonContainer
-            document.body.appendChild(manageButton);
+            buttonContainer.appendChild(manageButton);
             
         } catch (e) {
             console.error('创建按钮失败:', e);
@@ -898,7 +527,19 @@ window.editButton = function(index) {
         }
     }
     
-    // 注：saveButtonPosition函数已在文件上方定义
+    // 保存按钮位置到localStorage
+    function saveButtonPosition(element) {
+        try {
+            const position = {
+                left: parseInt(element.style.left || 0),
+                top: parseInt(element.style.top || 0)
+            };
+            localStorage.setItem(BUTTON_POSITION_KEY, JSON.stringify(position));
+            console.log('按钮位置保存成功:', position);
+        } catch (e) {
+            console.error('保存按钮位置失败:', e);
+        }
+    }
     
     // 设置拖动事件（带点击取消功能）
     function setupDragEventsWithClickCancel(element) {
@@ -1463,42 +1104,6 @@ window.editButton = function(index) {
         importBtn.onclick = importButtonsConfig;
         importExportSection.appendChild(importBtn);
         
-        // 重置按钮位置
-        const resetPositionBtn = document.createElement('button');
-        resetPositionBtn.textContent = '重置按钮位置';
-        resetPositionBtn.style.cssText = `
-            flex: 1;
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #fa8c16 0%, #ffa940 100%);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(250, 140, 22, 0.3);
-        `;
-        
-        resetPositionBtn.addEventListener('mouseenter', () => {
-            resetPositionBtn.style.transform = 'translateY(-2px)';
-            resetPositionBtn.style.boxShadow = '0 4px 12px rgba(250, 140, 22, 0.4)';
-        });
-        
-        resetPositionBtn.addEventListener('mouseleave', () => {
-            resetPositionBtn.style.transform = 'translateY(0)';
-            resetPositionBtn.style.boxShadow = '0 2px 8px rgba(250, 140, 22, 0.3)';
-        });
-        
-        resetPositionBtn.onclick = function() {
-            if (confirm('确定要重置所有按钮的位置吗？这将清除所有保存的位置设置。')) {
-                resetAllButtonsPosition();
-                showNotification('按钮位置已重置！', 'success');
-            }
-        };
-        
-        importExportSection.appendChild(resetPositionBtn);
-        
         contentContainer.appendChild(importExportSection);
         
         // 关闭按钮
@@ -1620,9 +1225,6 @@ window.editButton = function(index) {
     
     // 初始化函数
     function init() {
-        // 加载测试模式状态
-        loadTestModeState();
-        
         // 加载按钮配置
         loadButtonsConfig();
         
@@ -1644,38 +1246,8 @@ window.editButton = function(index) {
         }, retryInterval);
     }
     
-    // 切换测试模式
-    function toggleTestMode() {
-        isTestMode = !isTestMode;
-        saveTestModeState();
-        showNotification('测试模式已' + (isTestMode ? '开启' : '关闭') + '！点击按钮将' + (isTestMode ? '不会' : '会') + '发送消息。');
-        // 更新菜单命令的显示
-        updateMenuCommands();
-    }
-    
-    // 保存测试模式状态
-    function saveTestModeState() {
-        localStorage.setItem(TEST_MODE_KEY, isTestMode.toString());
-    }
-    
-    // 加载测试模式状态
-    function loadTestModeState() {
-        const savedState = localStorage.getItem(TEST_MODE_KEY);
-        if (savedState !== null) {
-            isTestMode = savedState === 'true';
-        }
-    }
-    
-    // 更新菜单命令
-    function updateMenuCommands() {
-        // 先清除旧的菜单命令
-        // 注意：GM_registerMenuCommand 没有提供删除方法，这里只重新注册
-        GM_registerMenuCommand('按钮管理面板', openButtonManagerPanel);
-        GM_registerMenuCommand('测试模式：' + (isTestMode ? '✅ 已开启' : '❌ 已关闭'), toggleTestMode);
-    }
-    
     // 注册油猴菜单
-    updateMenuCommands();
+    GM_registerMenuCommand('按钮管理面板', openButtonManagerPanel);
     
     // 当页面加载完成时初始化
     if (document.readyState === 'loading') {
