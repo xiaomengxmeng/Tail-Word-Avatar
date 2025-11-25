@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.14
+// @version      1.0.13
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -16,7 +16,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.14";
+    const version_us = "v1.0.13";
     // 按钮数据结构：{id, textContent, message, className , count}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
@@ -439,40 +439,17 @@ window.editButton = function(index) {
             }
 
             // 创建按钮容器
-                var buttonContainer = document.getElementById("custom-buttons-container");
-                if (!buttonContainer) {
-                    buttonContainer = document.createElement("div");
-                    buttonContainer.id = "custom-buttons-container";
-                    buttonContainer.align = "right";
-                    buttonContainer.style.marginBottom = "10px"; // 保留原有的底部边距
-                    
-                    // 为拖动功能添加必要的CSS样式
-                    buttonContainer.style.position = 'relative'; // 使用相对定位，保持原有布局
-                    buttonContainer.style.zIndex = '100';
-                    buttonContainer.style.backgroundColor = 'transparent';
-                    buttonContainer.style.border = 'none';
-                    buttonContainer.style.padding = '5px';
-                    buttonContainer.style.cursor = 'move'; // 默认设置整个容器可拖动
-                    
-                    // 保持原有的插入方式，添加到回复区域内部
-                    x.appendChild(buttonContainer);
-                    
-                    // 应用保存的位置
-                    applySavedPosition(buttonContainer);
-                    
-                    // 添加拖动事件到容器
-                    buttonContainer.addEventListener('mousedown', function(e) {
-                        // 只有当点击的是容器本身而不是内部按钮时才触发拖动
-                        if (e.target === buttonContainer) {
-                            // 拖动开始时，临时切换为绝对定位
-                            buttonContainer.style.position = 'absolute';
-                            setupDragEventsWithClickCancel(buttonContainer);
-                        }
-                    });
-                } else {
-                    // 清空现有按钮，避免重复添加
-                    buttonContainer.innerHTML = '';
-                }
+            var buttonContainer = document.getElementById("custom-buttons-container");
+            if (!buttonContainer) {
+                buttonContainer = document.createElement("div");
+                buttonContainer.id = "custom-buttons-container";
+                buttonContainer.align = "right";
+                buttonContainer.style.marginBottom = "10px";
+                x.appendChild(buttonContainer);
+            } else {
+                // 清空现有按钮，避免重复添加
+                buttonContainer.innerHTML = '';
+            }
             
             // 创建每个按钮
             buttonsConfig.forEach(button => {
@@ -505,105 +482,9 @@ window.editButton = function(index) {
         }
     }
     
-    // 按钮位置存储键名
-    const BUTTON_POSITION_KEY = 'custom_buttons_position';
-    
     // 生成唯一ID
     function generateUniqueId() {
         return 'custom-button-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-    }
-    
-    // 应用保存的按钮位置
-    function applySavedPosition(element) {
-        try {
-            const savedPosition = localStorage.getItem(BUTTON_POSITION_KEY);
-            if (savedPosition) {
-                const position = JSON.parse(savedPosition);
-                element.style.left = position.left + 'px';
-                element.style.top = position.top + 'px';
-            }
-        } catch (e) {
-            console.error('应用保存位置失败:', e);
-        }
-    }
-    
-    // 保存按钮位置到localStorage
-    function saveButtonPosition(element) {
-        try {
-            const position = {
-                left: parseInt(element.style.left || 0),
-                top: parseInt(element.style.top || 0)
-            };
-            localStorage.setItem(BUTTON_POSITION_KEY, JSON.stringify(position));
-            console.log('按钮位置保存成功:', position);
-        } catch (e) {
-            console.error('保存按钮位置失败:', e);
-        }
-    }
-    
-    // 设置拖动事件（带点击取消功能）
-    function setupDragEventsWithClickCancel(element) {
-        let isDragging = false;
-        let offsetX, offsetY;
-        let hasMoved = false;
-        
-        // 计算鼠标相对于元素左上角的偏移量
-        const elementRect = element.getBoundingClientRect();
-        offsetX = event.clientX - elementRect.left;
-        offsetY = event.clientY - elementRect.top;
-        
-        // 改变拖动过程中的样式
-        element.style.opacity = '0.8';
-        
-        // 鼠标移动事件处理
-        function handleMouseMove(e) {
-            // 如果移动超过5px，则视为拖动
-            if (!hasMoved) {
-                const movedX = Math.abs(e.clientX - (elementRect.left + offsetX));
-                const movedY = Math.abs(e.clientY - (elementRect.top + offsetY));
-                hasMoved = (movedX > 5 || movedY > 5);
-            }
-            
-            if (hasMoved) {
-                isDragging = true;
-                
-                // 计算新位置（考虑滚动）
-                const left = e.clientX - offsetX + window.scrollX;
-                const top = e.clientY - offsetY + window.scrollY;
-                
-                // 应用新位置
-                element.style.left = left + 'px';
-                element.style.top = top + 'px';
-            }
-        }
-        
-        // 鼠标释放事件处理
-        function handleMouseUp() {
-            // 移除事件监听器
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-            
-            // 恢复样式
-            element.style.opacity = '1';
-            
-            // 如果有拖动，保存位置
-            if (isDragging) {
-                saveButtonPosition(element);
-            }
-            // 拖动结束后，如果位置有保存，则保持绝对定位；否则恢复相对定位
-            if (!localStorage.getItem(BUTTON_POSITION_KEY)) {
-                element.style.position = 'relative';
-            } else {
-                element.style.position = 'absolute';
-            }
-        }
-        
-        // 添加鼠标移动和释放事件监听器到document
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-        
-        // 防止文本选中
-        event.preventDefault();
     }
     
     // 导入按钮配置
