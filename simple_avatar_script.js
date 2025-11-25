@@ -196,6 +196,18 @@
         let originalPosition = element.style.position;
         let originalMargin = element.style.marginBottom;
         
+        // 添加点击事件监听器，阻止拖动后的点击触发
+        element.addEventListener('click', function(e) {
+            if (isClickCanceled) {
+                e.stopPropagation(); // 阻止事件冒泡
+                e.preventDefault();  // 阻止默认行为
+                // 延迟重置标志，确保下一次点击正常工作
+                setTimeout(() => {
+                    isClickCanceled = false;
+                }, 100);
+            }
+        });
+        
         element.addEventListener('mousedown', function(e) {
             // 记录点击开始时间
             clickStartTime = Date.now();
