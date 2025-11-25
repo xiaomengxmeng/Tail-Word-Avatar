@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         摸鱼派鱼油好感度系统
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.1.1
 // @description  管理摸鱼派鱼油的好感度系统，支持好感度查询、修改和导入导出
 // @author      ZeroDream
 // @match        https://fishpi.cn/*
@@ -15,7 +15,7 @@
     'use strict';
 
     // 版本信息
-    const version = '1.1';
+    const version = '1.1.1';
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
@@ -76,8 +76,55 @@
                 
                 // 应用保存的位置
                 applySavedPosition(buttonContainer);
+            }
+            
+            // 检查按钮是否已存在
+            var favorButton = document.getElementById('fish-favor-button');
+            
+            // 如果按钮不存在，则创建新按钮
+            if (!favorButton) {
+                // 创建好感度管理按钮（样式匹配单词面板）
+                favorButton = document.createElement('button');
+                favorButton.id = 'fish-favor-button';
+                favorButton.textContent = '好感管理';
+                // 使用与单词面板相匹配的样式
+                favorButton.setAttribute('style', `
+                    background-color: #f0f8ff;
+                    border: 1px solid #b8e2ff;
+                    color: #0066cc;
+                    padding: 6px 12px;
+                    margin-right: 5px;
+                    margin-bottom: 5px;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    outline: none;
+                `);
                 
-                // 为按钮添加拖动事件
+                // 添加悬停效果
+                favorButton.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#e0f0ff';
+                    this.style.borderColor = '#91d5ff';
+                });
+                
+                favorButton.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = '#f0f8ff';
+                    this.style.borderColor = '#b8e2ff';
+                });
+                
+                // 添加到容器
+                buttonContainer.appendChild(favorButton);
+            }
+            
+            // 设置按钮点击事件
+            favorButton.onclick = function() {
+                openFavorManagerPanel();
+            };
+            
+            // 设置拖动功能到按钮上
+            if (favorButton) {
+                // 重写mousedown事件，处理拖动和点击
                 favorButton.onmousedown = function(e) {
                     if (e.target === favorButton) {
                         // 延迟打开面板，优先处理拖动
@@ -90,72 +137,8 @@
                     }
                 };
             }
-            
-            // 创建好感度管理按钮（样式匹配单词面板）
-            var favorButton = document.createElement('button');
-            favorButton.id = 'fish-favor-button';
-            favorButton.textContent = '好感管理';
-            // 使用与单词面板相匹配的样式
-            favorButton.setAttribute('style', `
-                background-color: #f0f8ff;
-                border: 1px solid #b8e2ff;
-                color: #0066cc;
-                padding: 6px 12px;
-                margin-right: 5px;
-                margin-bottom: 5px;
-                border-radius: 6px;
-                font-size: 14px;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                outline: none;
-            `);
-            
-            // 添加悬停效果
-            favorButton.addEventListener('mouseenter', function() {
-                this.style.backgroundColor = '#e0f0ff';
-                this.style.borderColor = '#91d5ff';
-            });
-            
-            favorButton.addEventListener('mouseleave', function() {
-                this.style.backgroundColor = '#f0f8ff';
-                this.style.borderColor = '#b8e2ff';
-            });
-            
-            favorButton.onclick = function() {
-                openFavorManagerPanel();
-            };
-            
-            // 检查按钮是否已存在，避免重复添加
-                if (!document.getElementById('fish-favor-button')) {
-                    buttonContainer.appendChild(favorButton);
-                }
-            
-            // 确保按钮存在后，设置拖动功能到按钮上
-                var favorButton = document.getElementById('fish-favor-button');
-                if (favorButton) {
-                    // 保存原始点击处理
-                    const originalOnClick = favorButton.onclick;
-                    
-                    // 重写mousedown事件，处理拖动和点击
-                    favorButton.onmousedown = function(e) {
-                        if (e.target === favorButton) {
-                            // 延迟打开面板，优先处理拖动
-                            const clickTimeout = setTimeout(function() {
-                                if (originalOnClick) originalOnClick();
-                            }, 200);
-                            
-                            // 设置拖动事件，拖动时取消点击
-                            setupDragEventsWithClickCancel(buttonContainer, favorButton, clickTimeout);
-                        }
-                    };
-                    
-                    // 移除原有的onclick处理，避免重复触发
-                    favorButton.onclick = null;
-                }
-            
-        } catch (e) {
-            console.error('创建好感度按钮失败:', e);
-            setTimeout(createFavorButton, 2000);
+        } catch (error) {
+            console.error('创建好感度按钮失败:', error);
         }
     }
     
