@@ -502,9 +502,9 @@
 
         const favorInput = document.createElement('input');
         favorInput.type = 'number';
-        favorInput.min = '0';
+        favorInput.min = '-100';
         favorInput.max = '100';
-        favorInput.value = '50';
+        favorInput.value = '0';
         favorInput.style.cssText = `
             width: 100%;
             padding: 10px 12px;
@@ -641,7 +641,7 @@
 
             // 清空输入框
             nameInput.value = '';
-            favorInput.value = 50;
+            favorInput.value = 0;
             noteInput.value = '';
 
             // 显示成功提示
