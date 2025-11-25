@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.15
+// @version      1.0.17
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -16,10 +16,12 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.16";
+    const version_us = "v1.0.17";
     // 按钮数据结构：{id, textContent, message, className , count}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
+    const TEST_MODE_KEY = 'buttonTestMode';
+    let isTestMode = false;
     const DEFAULT_BUTTONS = [
         { id: 'default-bingbing', textContent: '打劫', message: '冰冰 去打劫', className: 'red', count: 0 },
         { id: 'default-ge', textContent: '鸽', message: '鸽 行行好吧', className: 'red', count: 0 }
@@ -825,7 +827,14 @@ window.editButton = function(index) {
                 btn.setAttribute('style', baseStyle + '; position: absolute; z-index: 100;');
                 
                 btn.onclick = function() {
-                    sendMsgApi(button.message);
+                    // 添加测试模式判断
+                    if (isTestMode) {
+                        // 测试模式下显示反馈信息
+                        showNotification(`测试模式: 不会发送消息 - "${button.message}"`, 'blue');
+                    } else {
+                        // 非测试模式下正常发送消息
+                        sendMsgApi(button.message);
+                    }
                     // 增加点击次数
                     button.count++;
                     saveButtonsConfig();
@@ -1639,6 +1648,9 @@ window.editButton = function(index) {
     
     // 初始化函数
     function init() {
+        // 加载测试模式状态
+        loadTestModeState();
+        
         // 加载按钮配置
         loadButtonsConfig();
         
@@ -1660,8 +1672,38 @@ window.editButton = function(index) {
         }, retryInterval);
     }
     
+    // 切换测试模式
+    function toggleTestMode() {
+        isTestMode = !isTestMode;
+        saveTestModeState();
+        showNotification('测试模式已' + (isTestMode ? '开启' : '关闭') + '！点击按钮将' + (isTestMode ? '不会' : '会') + '发送消息。');
+        // 更新菜单命令的显示
+        updateMenuCommands();
+    }
+    
+    // 保存测试模式状态
+    function saveTestModeState() {
+        localStorage.setItem(TEST_MODE_KEY, isTestMode.toString());
+    }
+    
+    // 加载测试模式状态
+    function loadTestModeState() {
+        const savedState = localStorage.getItem(TEST_MODE_KEY);
+        if (savedState !== null) {
+            isTestMode = savedState === 'true';
+        }
+    }
+    
+    // 更新菜单命令
+    function updateMenuCommands() {
+        // 先清除旧的菜单命令
+        // 注意：GM_registerMenuCommand 没有提供删除方法，这里只重新注册
+        GM_registerMenuCommand('按钮管理面板', openButtonManagerPanel);
+        GM_registerMenuCommand('测试模式：' + (isTestMode ? '✅ 已开启' : '❌ 已关闭'), toggleTestMode);
+    }
+    
     // 注册油猴菜单
-    GM_registerMenuCommand('按钮管理面板', openButtonManagerPanel);
+    updateMenuCommands();
     
     // 当页面加载完成时初始化
     if (document.readyState === 'loading') {
