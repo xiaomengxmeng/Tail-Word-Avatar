@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         摸鱼派鱼油好感度系统
 // @namespace    http://tampermonkey.net/
-// @version      1.1.1
+// @version      1.1.2
 // @description  管理摸鱼派鱼油的好感度系统，支持好感度查询、修改和导入导出
 // @author      ZeroDream
 // @match        https://fishpi.cn/*
@@ -15,7 +15,7 @@
     'use strict';
 
     // 版本信息
-    const version = '1.1.1';
+    const version = '1.1.2';
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
@@ -1217,12 +1217,12 @@
                 `;
                 noteContainer.appendChild(notesTitle);
                 
-                // 确保notes数组按时间倒序排序（最新的在前）
+                // 确保notes数组按时间正序排序（最早的在前）
                 // 兼容没有timestampObj的历史数据，使用timestamp字符串解析为日期对象
                 fish.notes.sort((a, b) => {
                     const dateA = a.timestampObj || new Date(a.timestamp);
                     const dateB = b.timestampObj || new Date(b.timestamp);
-                    return dateB - dateA;
+                    return dateA - dateB;
                 });
                 
                 // 创建每个备注项
@@ -1308,13 +1308,13 @@
             `;
             noteContainer.appendChild(notesTitle);
             
-            // 确保notes数组按时间倒序排序（最新的在前）
-            // 兼容没有timestampObj的历史数据，使用timestamp字符串解析为日期对象
-            fish.notes.sort((a, b) => {
-                const dateA = a.timestampObj || new Date(a.timestamp);
-                const dateB = b.timestampObj || new Date(b.timestamp);
-                return dateB - dateA;
-            });
+            // 确保notes数组按时间正序排序（最早的在前）
+                // 兼容没有timestampObj的历史数据，使用timestamp字符串解析为日期对象
+                fish.notes.sort((a, b) => {
+                    const dateA = a.timestampObj || new Date(a.timestamp);
+                    const dateB = b.timestampObj || new Date(b.timestamp);
+                    return dateA - dateB;
+                });
             
             // 创建每个备注项
             fish.notes.forEach((note, index) => {
