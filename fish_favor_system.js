@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         摸鱼派鱼油好感度系统
 // @namespace    http://tampermonkey.net/
-// @version      1.1.5
+// @version      1.1.8
 // @description  管理摸鱼派鱼油的好感度系统，支持好感度查询、修改和导入导出
 // @author      ZeroDream
 // @match        https://fishpi.cn/*
@@ -15,7 +15,7 @@
     'use strict';
 
     // 版本信息
-    const version = '1.1.5';
+    const version = '1.1.8';
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
@@ -26,6 +26,8 @@
 
     // 存储键名
     const STORAGE_KEY = 'fish_favor_system_config';
+    // 测试模式状态
+    let testMode = false;
 
     // 初始化函数
     function init() {
@@ -39,6 +41,86 @@
         // 创建界面按钮
         createFavorButton();
         console.log('好感度系统初始化完成');
+    }
+    
+    // 生成MD格式的好感度图表
+    function generateFishChartMD(fish) {
+        let mdContent = `# ${fish.name} 的好感度信息\n\n`;
+        
+        // 基础信息
+        mdContent += `## 基础信息\n`;
+        mdContent += `- **当前好感度**: ${fish.favor}\n`;
+        mdContent += `- **好感度等级**: ${getFavorLevel(fish.favor)}\n`;
+        mdContent += `- **创建时间**: ${new Date(fish.createdAt).toLocaleString('zh-CN')}\n`;
+        mdContent += `- **更新时间**: ${new Date(fish.updatedAt).toLocaleString('zh-CN')}\n\n`;
+        
+        // 好感度变化历史图表（使用字符画简单表示）
+        mdContent += `## 好感度变化历史\n`;
+        if (fish.notes && fish.notes.length > 0) {
+            // 最近10条记录
+            const recentNotes = fish.notes.slice(-10).reverse();
+            
+            let currentFavor = fish.favor;
+            // 从当前好感度开始，逆向计算历史好感度
+            const favorHistory = [currentFavor];
+            
+            for (let i = recentNotes.length - 1; i >= 0; i--) {
+                const note = recentNotes[i];
+                if (note.favorChange) {
+                    currentFavor -= note.favorChange;
+                    favorHistory.unshift(currentFavor);
+                }
+            }
+            
+            // 生成简单的字符图表
+            const maxFavor = Math.max(...favorHistory, 20);
+            const barWidth = 40;
+            
+            mdContent += "```\n";
+            favorHistory.forEach((value, index) => {
+                const barLength = Math.round((value / maxFavor) * barWidth);
+                const bar = '█'.repeat(barLength) + '░'.repeat(barWidth - barLength);
+                mdContent += `${index.toString().padStart(2, '0')}: ${value.toString().padStart(3, ' ')} ${bar}\n`;
+            });
+            mdContent += "```\n\n";
+            
+            // 最近5条备注
+            mdContent += `## 最近5条记录\n`;
+            const last5Notes = fish.notes.slice(-5).reverse();
+            last5Notes.forEach(note => {
+                const date = new Date(note.timestamp).toLocaleString('zh-CN');
+                let favorInfo = '';
+                if (note.favorChange) {
+                    favorInfo = note.favorChange > 0 ? `(+${note.favorChange})` : `(${note.favorChange})`;
+                }
+                mdContent += `- **${date}** ${favorInfo} ${note.content || ''}\n`;
+            });
+        } else {
+            mdContent += "暂无好感度变化记录\n\n";
+        }
+        
+        mdContent += `\n*由鱼油好感度系统 v${version} 生成*`;
+        return mdContent;
+    }
+    
+    // 发送消息到聊天室的API函数
+    function sendMsgApi(msg) {
+        var msgData = {
+            "content": msg,
+            "client": "Web/小尾巴快捷端"
+        };
+        $.ajax({
+            url: "https://fishpi.cn/chat-room/send",
+            type: "POST",
+            async: false,
+            data: JSON.stringify(msgData),
+            success: function (e) {
+                // 成功回调
+            },
+            error: function (e) {
+                console.error('发送消息失败:', e);
+            }
+        });
     }
     
     // 按钮位置存储键名
@@ -239,7 +321,18 @@
         try {
             const savedConfig = localStorage.getItem(STORAGE_KEY);
             if (savedConfig) {
-                fishFavorConfig = JSON.parse(savedConfig);
+                const parsedConfig = JSON.parse(savedConfig);
+                
+                // 判断是否是新的数据格式（包含testMode）
+                if (parsedConfig.fishFavorConfig) {
+                    fishFavorConfig = parsedConfig.fishFavorConfig;
+                    testMode = parsedConfig.testMode || false;
+                } else {
+                    // 旧格式，直接使用
+                    fishFavorConfig = parsedConfig;
+                    testMode = false; // 默认为false
+                }
+                
                 // 数据迁移：将旧的单一note字段转换为新的notes数组格式
                 fishFavorConfig = fishFavorConfig.map(fish => {
                     // 如果是旧格式（有note字段但没有notes字段）
@@ -277,14 +370,17 @@
                     return fish;
                 });
                 console.log('好感度配置加载成功，已完成数据迁移');
+                console.log('测试模式状态:', testMode ? '开启' : '关闭');
             } else {
                 fishFavorConfig = [];
+                testMode = false;
                 console.log('首次使用，创建默认配置');
                 saveFavorConfig();
             }
         } catch (e) {
             console.error('加载好感度配置失败:', e);
             fishFavorConfig = [];
+            testMode = false;
             saveFavorConfig();
         }
     }
@@ -292,7 +388,11 @@
     // 保存好感度配置到localStorage
     function saveFavorConfig() {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(fishFavorConfig));
+            const configData = {
+                fishFavorConfig: fishFavorConfig,
+                testMode: testMode
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(configData));
             console.log('好感度配置保存成功');
         } catch (e) {
             console.error('保存好感度配置失败:', e);
@@ -959,9 +1059,7 @@
                                     timestamp: timestamp,
                                     content: note.trim(),
                                     timestampObj: now,
-                                    favorBefore: favorBefore,
-                                    favorChange: favorChange,
-                                    favorAfter: favorBefore + favorChange
+                                    favorChange: favorChange
                                 });
                                 
                                 // 按时间倒序排序（最新的在前）
@@ -1103,9 +1201,7 @@
                                     timestamp: timestamp,
                                     content: note.trim(),
                                     timestampObj: now,
-                                    favorBefore: favorBefore,
-                                    favorChange: favorChange,
-                                    favorAfter: Math.min(100, favorBefore + favorChange)
+                                    favorChange: favorChange
                                 });
                                 
                                 // 按时间倒序排序（最新的在前）
@@ -1170,11 +1266,11 @@
             `;
 
             resetBtn.addEventListener('click', function() {
-                if (confirm(`确定要将 ${fish.name} 的好感度重置为50吗？`)) {
-                    fish.favor = 50;
+                if (confirm(`确定要将 ${fish.name} 的好感度重置为0吗？`)) {
+                    fish.favor = 0;
                     updateFavorDisplay(fishItem, fish);
                     saveFavorConfig();
-                    showNotification(`已将 ${fish.name} 的好感度重置为50`, 'success');
+                    showNotification(`已将 ${fish.name} 的好感度重置为0`, 'success');
                 }
             });
 
@@ -1207,6 +1303,36 @@
 
             actionButtons.appendChild(editBtn);
             actionButtons.appendChild(resetBtn);
+            
+            // 图表输出按钮
+            const chartBtn = document.createElement('button');
+            chartBtn.textContent = '图表';
+            chartBtn.style.cssText = `
+                flex: 1;
+                padding: 6px 12px;
+                background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                transition: all 0.3s ease;
+            `;
+            
+            chartBtn.addEventListener('click', function() {
+                const mdChart = generateFishChartMD(fish);
+                if (fishFavorConfig.testMode && fishFavorConfig.testMode === true) {
+                    // 测试模式：只输出到控制台
+                    console.log('图表内容(测试模式):\n', mdChart);
+                    showNotification('图表已在控制台输出，测试模式已启用', 'info');
+                } else {
+                    // 正常模式：发送到聊天室
+                    sendMsgApi(mdChart);
+                    showNotification(`已发送 ${fish.name} 的好感度图表`, 'success');
+                }
+            });
+            
+            actionButtons.appendChild(chartBtn);
             actionButtons.appendChild(deleteBtn);
             fishItem.appendChild(actionButtons);
 
@@ -1280,12 +1406,12 @@
                     noteItem.appendChild(noteContent);
                     
                     // 如果有好感度变化信息，显示在右侧
-                    if (note.favorBefore !== undefined && note.favorChange !== undefined && note.favorAfter !== undefined) {
+                    if (note.favorChange !== undefined) {
                         const favorChangeSpan = document.createElement('span');
                         const changeSign = note.favorChange > 0 ? '+' : '';
                         const changeColor = note.favorChange > 0 ? '#52c41a' : (note.favorChange < 0 ? '#ff4d4f' : '#8c8c8c');
                         
-                        favorChangeSpan.innerHTML = `好感度: ${note.favorBefore} ${changeSign}${note.favorChange} = ${note.favorAfter}`;
+                        favorChangeSpan.innerHTML = `${changeSign}${note.favorChange}`;
                         favorChangeSpan.style.cssText = `
                             margin-left: 10px;
                             padding: 2px 6px;
@@ -1308,6 +1434,85 @@
 
             fishList.appendChild(fishItem);
         });
+        
+        // 添加测试模式开关
+        const testModeSection = document.createElement('div');
+        testModeSection.style.cssText = `
+            padding: 15px 20px;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #fafafa;
+        `;
+        
+        const testModeLabel = document.createElement('span');
+        testModeLabel.textContent = '测试模式（仅输出到控制台）';
+        testModeLabel.style.cssText = `
+            font-size: 14px;
+            color: #555;
+            font-weight: 500;
+        `;
+        
+        const testModeSwitch = document.createElement('label');
+        testModeSwitch.style.cssText = `
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        `;
+        
+        const testModeCheckbox = document.createElement('input');
+        testModeCheckbox.type = 'checkbox';
+        testModeCheckbox.checked = testMode;
+        testModeCheckbox.style.cssText = `
+            opacity: 0;
+            width: 0;
+            height: 0;
+        `;
+        
+        const testModeSlider = document.createElement('span');
+        testModeSlider.style.cssText = `
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        `;
+        
+        testModeSlider.addEventListener('mouseenter', () => {
+            if (!testMode) {
+                testModeSlider.style.backgroundColor = '#a0a0a0';
+            }
+        });
+        
+        testModeSlider.addEventListener('mouseleave', () => {
+            if (!testMode) {
+                testModeSlider.style.backgroundColor = '#ccc';
+            }
+        });
+        
+        // 初始化滑块样式
+        if (testMode) {
+            testModeSlider.style.backgroundColor = '#40a9ff';
+        }
+        
+        testModeCheckbox.addEventListener('change', function() {
+            testMode = this.checked;
+            testModeSlider.style.backgroundColor = this.checked ? '#40a9ff' : '#ccc';
+            showNotification(testMode ? '测试模式已开启' : '测试模式已关闭', 'info');
+            saveFavorConfig();
+        });
+        
+        testModeSwitch.appendChild(testModeCheckbox);
+        testModeSwitch.appendChild(testModeSlider);
+        testModeSection.appendChild(testModeLabel);
+        testModeSection.appendChild(testModeSwitch);
+        panel.appendChild(testModeSection);
     }
 
     // 更新好感度显示
@@ -1401,12 +1606,12 @@
                 noteItem.appendChild(noteContent);
                 
                 // 如果有好感度变化信息，显示在右侧
-                if (note.favorBefore !== undefined && note.favorChange !== undefined && note.favorAfter !== undefined) {
+                if (note.favorChange !== undefined) {
                     const favorChangeSpan = document.createElement('span');
                     const changeSign = note.favorChange > 0 ? '+' : '';
                     const changeColor = note.favorChange > 0 ? '#52c41a' : (note.favorChange < 0 ? '#ff4d4f' : '#8c8c8c');
                     
-                    favorChangeSpan.innerHTML = `好感度: ${note.favorBefore} ${changeSign}${note.favorChange} = ${note.favorAfter}`;
+                    favorChangeSpan.innerHTML = `${changeSign}${note.favorChange}`;
                     favorChangeSpan.style.cssText = `
                         margin-left: 10px;
                         padding: 2px 6px;
@@ -1635,9 +1840,7 @@
                     timestamp: timestamp,
                     content: newNoteContent.trim(),
                     timestampObj: now,
-                    favorBefore: favorBefore,
-                    favorChange: favorChange,
-                    favorAfter: newFavorValue
+                    favorChange: favorChange
                 });
                 
                 // 按时间倒序排序（最新的在前）
