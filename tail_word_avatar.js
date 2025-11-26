@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         鱼派单词头像功能集
 // @namespace    http://tampermonkey.net/
-// @version      1.0.2
+// @version      1.0.3
 // @description  整合单词功能和头像生成功能的精简版脚本   try to thank APTX-4869!
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
