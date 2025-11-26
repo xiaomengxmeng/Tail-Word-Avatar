@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         摸鱼派鱼油好感度系统
 // @namespace    http://tampermonkey.net/
-// @version      1.1.4
+// @version      1.1.5
 // @description  管理摸鱼派鱼油的好感度系统，支持好感度查询、修改和导入导出
 // @author      ZeroDream
 // @match        https://fishpi.cn/*
@@ -15,7 +15,7 @@
     'use strict';
 
     // 版本信息
-    const version = '1.1.4';
+    const version = '1.1.5';
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
@@ -939,6 +939,10 @@
                                 fish.notes = [];
                             }
                             
+                            // 记录好感度变化信息
+                            const favorBefore = fish.favor;
+                            const favorChange = -amount;
+                            
                             // 如果用户输入了备注，添加到notes数组
                             if (note && note.trim()) {
                                 const now = new Date();
@@ -954,7 +958,10 @@
                                 fish.notes.push({
                                     timestamp: timestamp,
                                     content: note.trim(),
-                                    timestampObj: now
+                                    timestampObj: now,
+                                    favorBefore: favorBefore,
+                                    favorChange: favorChange,
+                                    favorAfter: favorBefore + favorChange
                                 });
                                 
                                 // 按时间倒序排序（最新的在前）
@@ -1077,6 +1084,10 @@
                             }
                             
                             // 如果用户输入了备注，添加到notes数组
+                            // 记录好感度变化信息
+                            const favorBefore = fish.favor;
+                            const favorChange = amount;
+                            
                             if (note && note.trim()) {
                                 const now = new Date();
                                 const timestamp = now.toLocaleString('zh-CN', {
@@ -1091,7 +1102,10 @@
                                 fish.notes.push({
                                     timestamp: timestamp,
                                     content: note.trim(),
-                                    timestampObj: now
+                                    timestampObj: now,
+                                    favorBefore: favorBefore,
+                                    favorChange: favorChange,
+                                    favorAfter: Math.min(100, favorBefore + favorChange)
                                 });
                                 
                                 // 按时间倒序排序（最新的在前）
@@ -1236,6 +1250,9 @@
                         border-radius: 4px;
                         font-size: 11px;
                         color: #1890ff;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
                     `;
                     
                     // 为第一个（最新的）备注添加特殊样式
@@ -1244,6 +1261,9 @@
                         noteItem.style.borderColor = '#b7eb8f';
                         noteItem.style.color = '#389e0d';
                     }
+                    
+                    const noteContent = document.createElement('div');
+                    noteContent.style.cssText = 'flex: 1;';
                     
                     const timestampSpan = document.createElement('span');
                     timestampSpan.textContent = `[${note.timestamp}] `;
@@ -1255,8 +1275,31 @@
                     const contentSpan = document.createElement('span');
                     contentSpan.textContent = note.content;
                     
-                    noteItem.appendChild(timestampSpan);
-                    noteItem.appendChild(contentSpan);
+                    noteContent.appendChild(timestampSpan);
+                    noteContent.appendChild(contentSpan);
+                    noteItem.appendChild(noteContent);
+                    
+                    // 如果有好感度变化信息，显示在右侧
+                    if (note.favorBefore !== undefined && note.favorChange !== undefined && note.favorAfter !== undefined) {
+                        const favorChangeSpan = document.createElement('span');
+                        const changeSign = note.favorChange > 0 ? '+' : '';
+                        const changeColor = note.favorChange > 0 ? '#52c41a' : (note.favorChange < 0 ? '#ff4d4f' : '#8c8c8c');
+                        
+                        favorChangeSpan.innerHTML = `好感度: ${note.favorBefore} ${changeSign}${note.favorChange} = ${note.favorAfter}`;
+                        favorChangeSpan.style.cssText = `
+                            margin-left: 10px;
+                            padding: 2px 6px;
+                            background: #f5f5f5;
+                            border-radius: 3px;
+                            font-size: 10px;
+                            color: ${changeColor};
+                            font-weight: 500;
+                            white-space: nowrap;
+                        `;
+                        
+                        noteItem.appendChild(favorChangeSpan);
+                    }
+                    
                     noteContainer.appendChild(noteItem);
                 });
                 
@@ -1328,6 +1371,9 @@
                     border-radius: 4px;
                     font-size: 11px;
                     color: #1890ff;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
                 `;
                 
                 // 为第一个（最新的）备注添加特殊样式
@@ -1336,6 +1382,9 @@
                     noteItem.style.borderColor = '#b7eb8f';
                     noteItem.style.color = '#389e0d';
                 }
+                
+                const noteContent = document.createElement('div');
+                noteContent.style.cssText = 'flex: 1;';
                 
                 const timestampSpan = document.createElement('span');
                 timestampSpan.textContent = `[${note.timestamp}] `;
@@ -1347,8 +1396,31 @@
                 const contentSpan = document.createElement('span');
                 contentSpan.textContent = note.content;
                 
-                noteItem.appendChild(timestampSpan);
-                noteItem.appendChild(contentSpan);
+                noteContent.appendChild(timestampSpan);
+                noteContent.appendChild(contentSpan);
+                noteItem.appendChild(noteContent);
+                
+                // 如果有好感度变化信息，显示在右侧
+                if (note.favorBefore !== undefined && note.favorChange !== undefined && note.favorAfter !== undefined) {
+                    const favorChangeSpan = document.createElement('span');
+                    const changeSign = note.favorChange > 0 ? '+' : '';
+                    const changeColor = note.favorChange > 0 ? '#52c41a' : (note.favorChange < 0 ? '#ff4d4f' : '#8c8c8c');
+                    
+                    favorChangeSpan.innerHTML = `好感度: ${note.favorBefore} ${changeSign}${note.favorChange} = ${note.favorAfter}`;
+                    favorChangeSpan.style.cssText = `
+                        margin-left: 10px;
+                        padding: 2px 6px;
+                        background: #f5f5f5;
+                        border-radius: 3px;
+                        font-size: 10px;
+                        color: ${changeColor};
+                        font-weight: 500;
+                        white-space: nowrap;
+                    `;
+                    
+                    noteItem.appendChild(favorChangeSpan);
+                }
+                
                 noteContainer.appendChild(noteItem);
             });
             
@@ -1542,6 +1614,11 @@
                 fish.notes = [];
             }
             
+            // 记录好感度变化信息
+            const favorBefore = fish.favor;
+            const newFavorValue = Math.max(-100, Math.min(100, newFavor));
+            const favorChange = newFavorValue - favorBefore;
+            
             // 如果有新的备注内容，添加到notes数组
             if (newNoteContent && newNoteContent.trim()) {
                 const now = new Date();
@@ -1557,7 +1634,10 @@
                 fish.notes.push({
                     timestamp: timestamp,
                     content: newNoteContent.trim(),
-                    timestampObj: now
+                    timestampObj: now,
+                    favorBefore: favorBefore,
+                    favorChange: favorChange,
+                    favorAfter: newFavorValue
                 });
                 
                 // 按时间倒序排序（最新的在前）
