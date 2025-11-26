@@ -13,7 +13,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.2";
+    const version_us = "v1.0.3";
 
     // 小尾巴开关状态
     var suffixFlag = window.localStorage['xwb_flag'] ? JSON.parse(window.localStorage['xwb_flag']) : true;
@@ -73,6 +73,16 @@
 
     // 获取当前小尾巴文本
     function getCurrentSuffixText() {
+        // 优先检查是否有自定义小尾巴
+        const isCustom = window.localStorage['xwb_is_custom_suffix'] === 'true';
+        const customSuffix = window.localStorage['xwb_custom_suffix'];
+        
+        // 如果设置了自定义小尾巴且不为空，则返回自定义文本
+        if (isCustom && customSuffix) {
+            return customSuffix;
+        }
+        
+        // 否则返回预设的小尾巴选项
         return suffixOptions[getCurrentSuffixIndex()] || suffixOptions[0];
     }
 
