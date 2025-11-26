@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         摸鱼派鱼油好感度系统
 // @namespace    http://tampermonkey.net/
-// @version      1.1.2
+// @version      1.1.4
 // @description  管理摸鱼派鱼油的好感度系统，支持好感度查询、修改和导入导出
 // @author      ZeroDream
 // @match        https://fishpi.cn/*
@@ -15,7 +15,7 @@
     'use strict';
 
     // 版本信息
-    const version = '1.1.2';
+    const version = '1.1.4';
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
@@ -929,7 +929,7 @@
 
             decreaseBtn.addEventListener('click', function() {
                 const amount = parseInt(decreaseAmount.value) || 1;
-                if (fish.favor > 0) {
+                if (true) {
                     // 显示自定义备注输入对话框
                     showNoteDialog(`将 ${fish.name} 的好感度减少 ${amount} 点，可选添加备注：`, function(note) {
                         // 只有用户点击确定才执行操作
@@ -962,7 +962,7 @@
                             }
                             
                             // 执行好感度减少
-                            fish.favor = Math.max(0, fish.favor - amount);
+                            fish.favor = fish.favor - amount;
                             updateFavorDisplay(fishItem, fish);
                             saveFavorConfig();
                             showNotification(`已将 ${fish.name} 的好感度减少到 ${fish.favor}`, 'info');
@@ -1277,7 +1277,8 @@
         }
         
         if (progressBar) {
-            progressBar.style.width = `${fish.favor}%`;
+            // 确保进度条宽度不会为负数，负数时显示0%
+            progressBar.style.width = `${Math.max(0, fish.favor)}%`;
             progressBar.style.background = getFavorColor(fish.favor);
         }
         
@@ -1355,13 +1356,41 @@
         }
     }
 
-    // 根据好感度获取颜色
+    // 根据好感度获取颜色 - 从-100到100每10分一档
     function getFavorColor(favor) {
-        if (favor >= 80) return '#52c41a'; // 高好感度-绿色
-        if (favor >= 60) return '#1890ff'; // 中高好感度-蓝色
-        if (favor >= 40) return '#faad14'; // 中等好感度-黄色
-        if (favor >= 20) return '#fa8c16'; // 中低好感度-橙色
-        return '#ff4d4f'; // 低好感度-红色
+        // 负好感度区域（从深紫色到红色渐变）
+        if (favor <= -100) return '#3a1c71'; // 极负面 - 深紫色
+        if (favor <= -90) return '#553d9a'; // 极度负面 - 深紫色
+        if (favor <= -80) return '#7953a9'; // 非常负面 - 紫色
+        if (favor <= -70) return '#b37feb'; // 很负面 - 紫粉色
+        if (favor <= -60) return '#d76d77'; // 负面 - 玫红色
+        if (favor <= -50) return '#ffaf7b'; // 较负面 - 橙粉色
+        if (favor <= -40) return '#ff7675'; // 负面 - 红色
+        if (favor <= -30) return '#fd79a8'; // 轻微负面 - 粉红色
+        if (favor <= -20) return '#fdcb6e'; // 略负面 - 橙黄色
+        if (favor <= -10) return '#ffeaa7'; // 接近零 - 浅黄色
+        
+        // 零区域
+        if (favor <= 0) return '#95a5a6'; // 零 - 灰色
+        
+        // 低好感度区域（黄色系）
+        if (favor <= 10) return '#ffeaa7'; // 略正面 - 浅黄色
+        if (favor <= 20) return '#fdcb6e'; // 轻微正面 - 橙黄色
+        if (favor <= 30) return '#fab1a0'; // 较正面 - 浅橙色
+        if (favor <= 40) return '#fd79a8'; // 正面 - 粉红色
+        
+        // 中等好感度区域（绿色系）
+        if (favor <= 50) return '#74b9ff'; // 中等正面 - 浅蓝色
+        if (favor <= 60) return '#55efc4'; // 较正面 - 青色
+        if (favor <= 70) return '#00cec9'; // 很正面 - 亮青色
+        
+        // 高好感度区域（深绿色系）
+        if (favor <= 80) return '#00b894'; // 非常正面 - 深青色
+        if (favor <= 90) return '#2ecc71'; // 极度正面 - 绿色
+        if (favor <= 100) return '#00b894'; // 极正面 - 深绿色
+        
+        // 超出范围的默认值
+        return '#52c41a'; // 超高好感度 - 亮绿色
     }
 
     // 编辑鱼油
@@ -1430,7 +1459,7 @@
 
         const favorInput = document.createElement('input');
         favorInput.type = 'number';
-        favorInput.min = '0';
+        favorInput.min = '-100';
         favorInput.max = '100';
         favorInput.value = fish.favor;
         favorInput.style.cssText = `
