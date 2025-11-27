@@ -15,7 +15,7 @@
     'use strict';
 
     // 版本信息
-    const version = '1.2.2';
+    const version = '1.2.5';
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
@@ -37,49 +37,14 @@
             GM_registerMenuCommand('打开鱼油好感度管理', function() {
                 openFavorManagerPanel();
             });
-            // 添加测试图表生成的命令
-            GM_registerMenuCommand('测试好感度图表', function() {
-                testChartGeneration();
-            });
+
         }
         // 创建界面按钮
         createFavorButton();
         console.log('好感度系统初始化完成');
     }
     
-    // 测试图表生成功能
-    function testChartGeneration() {
-        // 创建测试数据
-        const testFish = {
-            name: '测试鱼油',
-            favor: 75,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            notes: [
-                { timestamp: new Date(Date.now() - 3600000).toISOString(), content: '初次见面', favorChange: 20 },
-                { timestamp: new Date(Date.now() - 7200000).toISOString(), content: '帮助了我', favorChange: 30 },
-                { timestamp: new Date(Date.now() - 10800000).toISOString(), content: '分享了有趣的事情', favorChange: 15 },
-                { timestamp: new Date(Date.now() - 14400000).toISOString(), content: '聊得很开心', favorChange: 10 }
-            ]
-        };
-        
-        // 生成并显示图表
-        const chartMD = generateFishChartMD(testFish);
-        console.log('\n=== 测试图表生成 ===\n');
-        console.log(chartMD);
-        
-        // 显示通知
-        showNotification('图表已在控制台生成', 'info');
-        
-        // 如果支持，可以将图表内容复制到剪贴板
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(chartMD).then(() => {
-                showNotification('图表内容已复制到剪贴板', 'success');
-            }).catch(err => {
-                console.error('无法复制到剪贴板:', err);
-            });
-        }
-    }
+
     
     // 生成MD格式的好感度图表
     function generateFishChartMD(fish) {
@@ -105,7 +70,7 @@
             if (clampedFavor >= 30) return '🙂';
             if (clampedFavor >= 20) return '😃';
             if (clampedFavor >= 10) return '😐';
-            if (clampedFavor >= 0) return '😶';
+            if (clampedFavor >= 0)  return '😶';
             if (clampedFavor >= -10) return '😕';
             if (clampedFavor >= -20) return '😟';
             if (clampedFavor >= -30) return '😔';
@@ -182,7 +147,7 @@
             
             // 生成表头和分隔线，优化对齐
             mdContent += "时间点            | 好感度值 | 柱状图\n";
-            mdContent += "-----------------|---------|------\n";
+            mdContent += "-----------------|---------|--------------------------\n";
             
             // 找出最大值和最小值，用于优化显示范围
             const displayMaxValue = Math.max(...favorHistory);
@@ -193,8 +158,8 @@
             function calculateBarLength(value) {
                 // 确保好感度值在0-100范围内
                 const normalizedValue = Math.max(0, Math.min(100, value));
-                // 计算柱状图长度，最多25个字符
-                return Math.max(0, Math.floor((normalizedValue / 100) * 25));
+                // 计算柱状图长度，最多20个字符，确保更好的比例显示
+                return Math.max(0, Math.ceil((normalizedValue / 100) * 20));
             }
             
             // 生成文本图表（横轴时间，竖轴好感度）
@@ -209,17 +174,13 @@
                 }
                 
                 // 根据好感度值确定显示的符号和颜色
-                let symbol = "⬛";
-                if (value < 30) symbol = "🔴";
-                else if (value < 60) symbol = "🟠";
-                else symbol = "🟢";
+                let symbol = "🟠";
+                if (value >= 60) symbol = "🟢";
+                else if (value < 30) symbol = "🟡";
                 
                 // 生成条形图
                 const barLength = calculateBarLength(value);
                 const bar = barLength > 0 ? symbol.repeat(barLength) : '无';
-                
-                // 对于负好感度，添加特殊标记
-                const negativeMark = value < 0 ? ' ⚠️' : '';
                 
                 // 优化数值显示，添加正负号和对齐
                 let valueDisplay;
@@ -232,25 +193,29 @@
                 }
                 
                 // 使用表格格式展示，更清晰地显示横轴时间和竖轴好感度
-                mdContent += `${timeLabel.padEnd(17)} | ${valueDisplay.padStart(8)} | ${bar}${negativeMark}\n`;
+                mdContent += `${timeLabel.padEnd(17)} | ${valueDisplay.padStart(8)} | ${bar}\n`;
             });
             
             // 添加好感度范围参考线
             mdContent += "-----------------|---------|--------------------------\n";
             mdContent += "好感度范围        | 0 --- 100 | 视觉比例显示\n\n";
             
-            // 添加详细图例说明
+            // 添加图例说明
             mdContent += "图例说明：\n";
             mdContent += "🟢 高好感度 (60-100) - 关系良好\n";
             mdContent += "🟠 中等好感度 (30-59) - 关系一般\n";
             mdContent += "🔴 低好感度 (0-29) - 需要改善\n";
-            mdContent += "⚠️ 负好感度警告 - 关系紧张\n";
+            mdContent += "⚠️ 负好感度警告 - 关系紧张\n\n";
+            
+            mdContent += "📊 好感度范围：0-100\n";
+            
+
             } else {
                 mdContent += "暂无好感度记录\n";
             }
             
             mdContent += "```\n\n";
-            mdContent += "> 💡 好感度范围：0-100\n\n";
+            mdContent += "> 💡 好感度范围：-100-100\n\n";
             
             // 最近5条备注
             mdContent += `## 最近5条记录\n`;
@@ -1225,27 +1190,27 @@
         // 确保好感度在-100到100之间
         const clampedFavor = Math.max(-100, Math.min(100, favor));
         
-        // 10度一档的等级系统
+        // 10度一档的等级系统，全部使用四字词语
         if (clampedFavor >= 90) return '生死之交';
         if (clampedFavor >= 80) return '亲密无间';
         if (clampedFavor >= 70) return '莫逆之交';
-        if (clampedFavor >= 60) return '亲密好友';
-        if (clampedFavor >= 50) return '挚友';
-        if (clampedFavor >= 40) return '好友';
-        if (clampedFavor >= 30) return '要好';
-        if (clampedFavor >= 20) return '友善';
-        if (clampedFavor >= 10) return '和气';
-        if (clampedFavor >= 0) return '相识';
-        if (clampedFavor >= -10) return '认识';
-        if (clampedFavor >= -20) return '泛泛之交';
-        if (clampedFavor >= -30) return '普通关系';
-        if (clampedFavor >= -40) return '不太熟悉';
-        if (clampedFavor >= -50) return '接触不多';
-        if (clampedFavor >= -60) return '很少互动';
-        if (clampedFavor >= -70) return '了解有限';
-        if (clampedFavor >= -80) return '几乎陌生';
-        if (clampedFavor >= -90) return '素不相识';
-        return '从未谋面';
+        if (clampedFavor >= 60) return '刎颈之交';
+        if (clampedFavor >= 50) return '金兰之交';
+        if (clampedFavor >= 40) return '竹马之交';
+        if (clampedFavor >= 30) return '君子之交';
+        if (clampedFavor >= 20) return '相敬如宾';
+        if (clampedFavor >= 10) return '和颜悦色';
+        if (clampedFavor >= 0) return '点头之交';
+        if (clampedFavor >= -10) return '泛泛之交';
+        if (clampedFavor >= -20) return '面熟陌生';
+        if (clampedFavor >= -30) return '形同陌路';
+        if (clampedFavor >= -40) return '素未谋面';
+        if (clampedFavor >= -50) return '寡言少语';
+        if (clampedFavor >= -60) return '敬而远之';
+        if (clampedFavor >= -70) return '若即若离';
+        if (clampedFavor >= -80) return '相见恨晚';
+        if (clampedFavor >= -90) return '反目成仇';
+        return '势如水火';
     }
 
     // 更新鱼油列表
