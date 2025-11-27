@@ -15,7 +15,7 @@
     'use strict';
 
     // 版本信息
-    const version = '1.2.5';
+    const version = '1.2.3';
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
@@ -90,7 +90,7 @@
         mdContent += `- **创建时间**: ${formatDate(fish.createdAt)} 🕐\n`;
         mdContent += `- **更新时间**: ${formatDate(fish.updatedAt)} ⏱️\n\n`;
         
-        // 好感度变化历史（使用Mermaid图表表示）
+        // 好感度变化历史（简洁文字显示）
         mdContent += `## 好感度变化历史\n`;
         if (fish.notes && fish.notes.length > 0) {
             // 最近10条记录
@@ -108,18 +108,10 @@
                 }
             }
             
-            // 使用简单的文本方式展示好感度变化
+            // 使用简单的文字方式展示好感度变化
             mdContent += "## 好感度变化趋势\n\n";
-            mdContent += "```\n";
             
-            // 生成简单的文本图表
-            if (favorHistory.length > 0) {
-                // 找出最大值和最小值以便缩放
-                const maxValue = Math.max(...favorHistory);
-                const minValue = Math.min(...favorHistory);
-                const range = Math.max(1, maxValue - minValue); // 避免除零
-                
-                // 获取对应的时间戳信息
+            // 获取对应的时间戳信息
             const timeStamps = [];
             // 当前时间（用于最后一个点）
             timeStamps.push(new Date());
@@ -145,24 +137,11 @@
                 return `${month}/${day} ${hours}:${minutes}`;
             }
             
-            // 生成表头和分隔线，优化对齐
-            mdContent += "时间点            | 好感度值 | 柱状图\n";
-            mdContent += "-----------------|---------|--------------------------\n";
+            // 生成简洁的文字列表
+            mdContent += "**时间点** - **好感度值**\n";
+            mdContent += "---\n";
             
-            // 找出最大值和最小值，用于优化显示范围
-            const displayMaxValue = Math.max(...favorHistory);
-            const displayMinValue = Math.min(...favorHistory);
-            const displayRange = Math.max(1, displayMaxValue - displayMinValue);
-            
-            // 根据实际范围动态调整柱状图长度，确保更好的视觉效果
-            function calculateBarLength(value) {
-                // 确保好感度值在0-100范围内
-                const normalizedValue = Math.max(0, Math.min(100, value));
-                // 计算柱状图长度，最多20个字符，确保更好的比例显示
-                return Math.max(0, Math.ceil((normalizedValue / 100) * 20));
-            }
-            
-            // 生成文本图表（横轴时间，竖轴好感度）
+            // 生成文字形式的好感度变化记录
             favorHistory.forEach((value, index) => {
                 const isCurrent = index === favorHistory.length - 1;
                 const timestamp = timeStamps[index];
@@ -173,49 +152,16 @@
                     timeLabel += " [现在]";
                 }
                 
-                // 根据好感度值确定显示的符号和颜色
-                let symbol = "🟠";
-                if (value >= 60) symbol = "🟢";
-                else if (value < 30) symbol = "🟡";
+                // 根据好感度值确定显示的符号
+                let status = "🟠 中等";
+                if (value >= 60) status = "🟢 高";
+                else if (value < 30) status = "🟡 低";
                 
-                // 生成条形图
-                const barLength = calculateBarLength(value);
-                const bar = barLength > 0 ? symbol.repeat(barLength) : '无';
-                
-                // 优化数值显示，添加正负号和对齐
-                let valueDisplay;
-                if (value > 0) {
-                    valueDisplay = `+${value}`;
-                } else if (value < 0) {
-                    valueDisplay = value.toString();
-                } else {
-                    valueDisplay = "0";
-                }
-                
-                // 使用表格格式展示，更清晰地显示横轴时间和竖轴好感度
-                mdContent += `${timeLabel.padEnd(17)} | ${valueDisplay.padStart(8)} | ${bar}\n`;
+                // 显示好感度值和状态
+                mdContent += `- ${timeLabel} - **${value}** (${status})\n`;
             });
             
-            // 添加好感度范围参考线
-            mdContent += "-----------------|---------|--------------------------\n";
-            mdContent += "好感度范围        | 0 --- 100 | 视觉比例显示\n\n";
-            
-            // 添加图例说明
-            mdContent += "图例说明：\n";
-            mdContent += "🟢 高好感度 (60-100) - 关系良好\n";
-            mdContent += "🟠 中等好感度 (30-59) - 关系一般\n";
-            mdContent += "🔴 低好感度 (0-29) - 需要改善\n";
-            mdContent += "⚠️ 负好感度警告 - 关系紧张\n\n";
-            
-            mdContent += "📊 好感度范围：0-100\n";
-            
-
-            } else {
-                mdContent += "暂无好感度记录\n";
-            }
-            
-            mdContent += "```\n\n";
-            mdContent += "> 💡 好感度范围：-100-100\n\n";
+            mdContent += "\n💡 好感度范围：-100-100\n\n";
             
             // 最近5条备注
             mdContent += `## 最近5条记录\n`;
