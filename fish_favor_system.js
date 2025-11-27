@@ -105,33 +105,45 @@
                 }
             }
             
-            // 使用Mermaid图表展示好感度变化（使用更简单的语法）
-            mdContent += "```mermaid\n";
-            mdContent += "graph LR\n";
+            // 使用简单的文本方式展示好感度变化
+            mdContent += "## 好感度变化趋势\n\n";
+            mdContent += "```\n";
             
-            // 添加好感度数据节点和连接
-            favorHistory.forEach((value, index) => {
-                // 根据好感度值确定节点颜色
-                let color = "green";
-                if (value < 30) color = "red";
-                else if (value < 60) color = "orange";
+            // 生成简单的文本图表
+            if (favorHistory.length > 0) {
+                // 找出最大值和最小值以便缩放
+                const maxValue = Math.max(...favorHistory);
+                const minValue = Math.min(...favorHistory);
+                const range = Math.max(1, maxValue - minValue); // 避免除零
                 
-                // 为当前值添加特殊标记
-                const isCurrent = index === favorHistory.length - 1;
-                const nodeLabel = isCurrent ? value + "(当前)" : value.toString();
-                
-                // 添加节点
-                mdContent += `    A${index}[${nodeLabel}]`;
-                
-                // 只在不是最后一个节点时添加箭头
-                if (index < favorHistory.length - 1) {
-                    mdContent += " --> A" + (index + 1);
-                }
-                mdContent += "\n";
-                
-                // 添加样式
-                mdContent += `    style A${index} fill:${color},stroke:${color}\n`;
-            });
+                // 生成文本图表
+                favorHistory.forEach((value, index) => {
+                    const isCurrent = index === favorHistory.length - 1;
+                    const marker = isCurrent ? "[当前]" : "     ";
+                    
+                    // 根据好感度值确定显示的符号和颜色
+                    let symbol = "⬛";
+                    if (value < 30) symbol = "🔴";
+                    else if (value < 60) symbol = "🟠";
+                    else symbol = "🟢";
+                    
+                    // 生成简单的条形图，确保barLength非负
+                    const barLength = Math.max(0, Math.floor((value / 100) * 20));
+                    const bar = barLength > 0 ? symbol.repeat(barLength) : '无';
+                    
+                    // 对于负好感度，添加特殊标记
+                    const negativeMark = value < 0 ? ' ⚠️' : '';
+                    
+                    mdContent += `A${index}: ${value} ${marker} | ${bar}${negativeMark}\n`;
+                    
+                    // 如果不是最后一个，添加连接线
+                    if (index < favorHistory.length - 1) {
+                        mdContent += "  ↓\n";
+                    }
+                });
+            } else {
+                mdContent += "暂无好感度记录\n";
+            }
             
             mdContent += "```\n\n";
             mdContent += "> 💡 好感度范围：0-100\n\n";
