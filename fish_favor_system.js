@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         摸鱼派鱼油好感度系统
 // @namespace    http://tampermonkey.net/
-// @version      1.1.9
+// @version      1.2.0
 // @description  管理摸鱼派鱼油的好感度系统，支持好感度查询、修改和导入导出
 // @author      ZeroDream
 // @match        https://fishpi.cn/*
@@ -15,7 +15,7 @@
     'use strict';
 
     // 版本信息
-    const version = '1.1.9';
+    const version = '1.2.0';
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
@@ -47,12 +47,20 @@
     function generateFishChartMD(fish) {
         let mdContent = `# ${fish.name} 的好感度信息\n\n`;
         
+        // 格式化时间函数，处理无效日期
+        function formatDate(dateString) {
+            if (!dateString) return '未设置';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '未设置';
+            return date.toLocaleString('zh-CN');
+        }
+        
         // 基础信息
         mdContent += `## 基础信息\n`;
         mdContent += `- **当前好感度**: ${fish.favor}\n`;
         mdContent += `- **好感度等级**: ${getFavorLevel(fish.favor)}\n`;
-        mdContent += `- **创建时间**: ${new Date(fish.createdAt).toLocaleString('zh-CN')}\n`;
-        mdContent += `- **更新时间**: ${new Date(fish.updatedAt).toLocaleString('zh-CN')}\n\n`;
+        mdContent += `- **创建时间**: ${formatDate(fish.createdAt)}\n`;
+        mdContent += `- **更新时间**: ${formatDate(fish.updatedAt)}\n\n`;
         
         // 好感度变化历史图表（使用字符画简单表示）
         mdContent += `## 好感度变化历史\n`;
@@ -88,7 +96,7 @@
             mdContent += `## 最近5条记录\n`;
             const last5Notes = fish.notes.slice(-5).reverse();
             last5Notes.forEach(note => {
-                const date = new Date(note.timestamp).toLocaleString('zh-CN');
+                const date = formatDate(note.timestamp);
                 let favorInfo = '';
                 if (note.favorChange) {
                     favorInfo = note.favorChange > 0 ? `(+${note.favorChange})` : `(${note.favorChange})`;
@@ -370,10 +378,20 @@
                             });
                         }
                         
-                        // 返回新格式，移除旧的note字段
+                        // 返回新格式，移除旧的note字段，并添加时间戳字段
                         return {
                             ...fish,
-                            notes: notesArray
+                            notes: notesArray,
+                            createdAt: fish.createdAt || new Date(),
+                            updatedAt: fish.updatedAt || new Date()
+                        };
+                    }
+                    // 为没有时间戳字段的鱼油数据添加默认值
+                    if (!fish.createdAt || !fish.updatedAt) {
+                        return {
+                            ...fish,
+                            createdAt: fish.createdAt || new Date(),
+                            updatedAt: fish.updatedAt || new Date()
                         };
                     }
                     return fish;
@@ -717,11 +735,14 @@
             }
             
             // 创建新鱼油配置
+            const now = new Date();
             const newFish = {
                 id: generateUniqueId(),
                 name: fishName,
                 favor: favorValue,
-                notes: notesArray
+                notes: notesArray,
+                createdAt: now,
+                updatedAt: now
             };
 
             // 添加到配置并保存
@@ -1184,6 +1205,7 @@
                             
                             // 执行好感度减少
                             fish.favor = fish.favor - amount;
+                            fish.updatedAt = new Date(); // 更新时间戳
                             updateFavorDisplay(fishItem, fish);
                             saveFavorConfig();
                             showNotification(`已将 ${fish.name} 的好感度减少到 ${fish.favor}`, 'info');
@@ -1326,6 +1348,7 @@
                             
                             // 执行好感度增加
                             fish.favor = Math.min(100, fish.favor + amount);
+                            fish.updatedAt = new Date(); // 更新时间戳
                             updateFavorDisplay(fishItem, fish);
                             saveFavorConfig();
                             showNotification(`已将 ${fish.name} 的好感度增加到 ${fish.favor}`, 'info');
@@ -1411,6 +1434,7 @@
             resetBtn.addEventListener('click', function() {
                 if (confirm(`确定要将 ${fish.name} 的好感度重置为0吗？`)) {
                     fish.favor = 0;
+                    fish.updatedAt = new Date(); // 更新时间戳
                     updateFavorDisplay(fishItem, fish);
                     saveFavorConfig();
                     showNotification(`已将 ${fish.name} 的好感度重置为0`, 'success');
@@ -1590,81 +1614,7 @@
             font-weight: 500;
         `;
         
-        const testModeSwitch = document.createElement('label');
-        testModeSwitch.style.cssText = `
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        `;
-        
-        const testModeCheckbox = document.createElement('input');
-        testModeCheckbox.type = 'checkbox';
-        testModeCheckbox.checked = testMode;
-        testModeCheckbox.style.cssText = `
-            opacity: 0;
-            width: 0;
-            height: 0;
-        `;
-        
-        const testModeSlider = document.createElement('span');
-        testModeSlider.style.cssText = `
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        `;
-        
-        // 添加滑块内部圆点，增强视觉效果
-        const sliderDot = document.createElement('span');
-        sliderDot.style.cssText = `
-            position: absolute;
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        `;
-        testModeSlider.appendChild(sliderDot);
-        
-        testModeSlider.addEventListener('mouseenter', () => {
-            if (!testMode) {
-                testModeSlider.style.backgroundColor = '#a0a0a0';
-            }
-        });
-        
-        testModeSlider.addEventListener('mouseleave', () => {
-            if (!testMode) {
-                testModeSlider.style.backgroundColor = '#ccc';
-            }
-        });
-        
-        // 初始化滑块样式
-        if (testMode) {
-            testModeSlider.style.backgroundColor = '#40a9ff';
-            sliderDot.style.transform = 'translateX(26px)';
-        }
-        
-        testModeCheckbox.addEventListener('change', function() {
-            testMode = this.checked;
-            testModeSlider.style.backgroundColor = this.checked ? '#40a9ff' : '#ccc';
-            sliderDot.style.transform = this.checked ? 'translateX(26px)' : 'translateX(0)';
-            showNotification(testMode ? '测试模式已开启' : '测试模式已关闭', 'info');
-            saveFavorConfig();
-        });
-        
-        testModeSwitch.appendChild(testModeCheckbox);
-        testModeSwitch.appendChild(testModeSlider);
-        testModeSection.appendChild(testModeLabel);
-        testModeSection.appendChild(testModeSwitch);
-        panel.appendChild(testModeSection);
+        // 测试模式开关已经在面板顶部实现，这里不再重复添加
         
         // 将面板添加到DOM
         document.body.appendChild(panel);
@@ -2005,6 +1955,7 @@
             // 更新鱼油信息
             fish.name = newName;
             fish.favor = Math.max(-100, Math.min(100, newFavor)); // 确保在-100到100之间
+            fish.updatedAt = new Date(); // 更新时间戳
             // 移除旧的note字段（如果存在）
             if ('note' in fish) {
                 delete fish.note;
