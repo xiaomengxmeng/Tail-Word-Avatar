@@ -87,55 +87,56 @@
         mdContent += `- **创建时间**: ${formatDate(fish.createdAt)} 🕐\n`;
         mdContent += `- **更新时间**: ${formatDate(fish.updatedAt)} ⏱️\n\n`;
         
-        // 好感度变化历史图表（使用字符画简单表示）
+        // 好感度变化历史（使用Mermaid图表表示）
         mdContent += `## 好感度变化历史\n`;
         if (fish.notes && fish.notes.length > 0) {
             // 最近10条记录
             const recentNotes = fish.notes.slice(-10).reverse();
             
-            let currentFavor = fish.favor;
+            let currentFavor = Math.min(fish.favor, 100); // 确保好感度不超过100
             // 从当前好感度开始，逆向计算历史好感度
             const favorHistory = [currentFavor];
             
             for (let i = recentNotes.length - 1; i >= 0; i--) {
                 const note = recentNotes[i];
                 if (note.favorChange) {
-                    currentFavor -= note.favorChange;
+                    currentFavor = Math.min(Math.max(0, currentFavor - note.favorChange), 100); // 确保好感度在0-100之间
                     favorHistory.unshift(currentFavor);
                 }
             }
             
-            // 优化的字符图表生成
-            const maxFavor = Math.max(...favorHistory, 50); // 确保有一定的基准值
-            const minFavor = Math.min(...favorHistory, 0);
-            const barWidth = 45;
-            const range = maxFavor - minFavor;
+            // 使用Mermaid图表展示好感度变化
+            mdContent += "```mermaid\n";
+            mdContent += "graph LR\n";
             
-            mdContent += "```\n";
-            // 添加范围标识
-            mdContent += `范围: ${minFavor} - ${maxFavor}\n`;
-            mdContent += "=" .repeat(60) + "\n";
-            
+            // 添加好感度数据节点
             favorHistory.forEach((value, index) => {
-                // 根据相对位置计算进度条长度
-                const relativeValue = value - minFavor;
-                const barLength = Math.round((relativeValue / range) * barWidth);
+                // 根据好感度值确定节点颜色
+                let color = "green";
+                if (value < 30) color = "red";
+                else if (value < 60) color = "orange";
                 
-                // 根据好感度值使用不同的字符（增加视觉区分）
-                let barChar = '█';
-                let marker = '';
-                if (index === favorHistory.length - 1) { // 当前值
-                    marker = ' <-- 当前';
-                }
+                // 为当前值添加特殊标记
+                const isCurrent = index === favorHistory.length - 1;
+                const nodeLabel = isCurrent ? `${value} (当前)` : value.toString();
                 
-                // 对于负值使用不同的表示
-                const bar = value >= 0 ? barChar.repeat(Math.max(0, barLength)) : ' ';
-                const negBar = value < 0 ? '░'.repeat(Math.max(0, Math.abs(barLength))) : '';
-                
-                mdContent += `${index.toString().padStart(2, '0')}: ${value.toString().padStart(4, ' ')} ${negBar}${bar}${marker}\n`;
+                mdContent += `    A${index}["${nodeLabel}"] --- |"第${index}步"|`;
             });
-            mdContent += "=" .repeat(60) + "\n";
+            
+            // 移除最后一个多余的箭头
+            mdContent = mdContent.slice(0, mdContent.lastIndexOf("--- |")) + "\n";
+            
+            // 添加好感度范围说明
+            mdContent += "\n    subgraph 好感度范围说明\n";
+            mdContent += "        H0[0] --- H30[30] --- H60[60] --- H100[100]\n";
+            mdContent += "        style H0 fill:red,stroke:red\n";
+            mdContent += "        style H30 fill:orange,stroke:orange\n";
+            mdContent += "        style H60 fill:yellow,stroke:yellow\n";
+            mdContent += "        style H100 fill:green,stroke:green\n";
+            mdContent += "    end\n";
+            
             mdContent += "```\n\n";
+            mdContent += "> 💡 好感度范围：0-100\n\n";
             
             // 最近5条备注
             mdContent += `## 最近5条记录\n`;
