@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         摸鱼派鱼油好感度系统
 // @namespace    http://tampermonkey.net/
-// @version      1.2.2
+// @version      1.2.3
 // @description  管理摸鱼派鱼油的好感度系统，支持好感度查询、修改和导入导出
 // @author      ZeroDream
 // @match        https://fishpi.cn/*
@@ -37,10 +37,48 @@
             GM_registerMenuCommand('打开鱼油好感度管理', function() {
                 openFavorManagerPanel();
             });
+            // 添加测试图表生成的命令
+            GM_registerMenuCommand('测试好感度图表', function() {
+                testChartGeneration();
+            });
         }
         // 创建界面按钮
         createFavorButton();
         console.log('好感度系统初始化完成');
+    }
+    
+    // 测试图表生成功能
+    function testChartGeneration() {
+        // 创建测试数据
+        const testFish = {
+            name: '测试鱼油',
+            favor: 75,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            notes: [
+                { timestamp: new Date(Date.now() - 3600000).toISOString(), content: '初次见面', favorChange: 20 },
+                { timestamp: new Date(Date.now() - 7200000).toISOString(), content: '帮助了我', favorChange: 30 },
+                { timestamp: new Date(Date.now() - 10800000).toISOString(), content: '分享了有趣的事情', favorChange: 15 },
+                { timestamp: new Date(Date.now() - 14400000).toISOString(), content: '聊得很开心', favorChange: 10 }
+            ]
+        };
+        
+        // 生成并显示图表
+        const chartMD = generateFishChartMD(testFish);
+        console.log('\n=== 测试图表生成 ===\n');
+        console.log(chartMD);
+        
+        // 显示通知
+        showNotification('图表已在控制台生成', 'info');
+        
+        // 如果支持，可以将图表内容复制到剪贴板
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(chartMD).then(() => {
+                showNotification('图表内容已复制到剪贴板', 'success');
+            }).catch(err => {
+                console.error('无法复制到剪贴板:', err);
+            });
+        }
     }
     
     // 生成MD格式的好感度图表
@@ -116,31 +154,97 @@
                 const minValue = Math.min(...favorHistory);
                 const range = Math.max(1, maxValue - minValue); // 避免除零
                 
-                // 生成文本图表
-                favorHistory.forEach((value, index) => {
-                    const isCurrent = index === favorHistory.length - 1;
-                    const marker = isCurrent ? "[当前]" : "     ";
-                    
-                    // 根据好感度值确定显示的符号和颜色
-                    let symbol = "⬛";
-                    if (value < 30) symbol = "🔴";
-                    else if (value < 60) symbol = "🟠";
-                    else symbol = "🟢";
-                    
-                    // 生成简单的条形图，确保barLength非负
-                    const barLength = Math.max(0, Math.floor((value / 100) * 20));
-                    const bar = barLength > 0 ? symbol.repeat(barLength) : '无';
-                    
-                    // 对于负好感度，添加特殊标记
-                    const negativeMark = value < 0 ? ' ⚠️' : '';
-                    
-                    mdContent += `A${index}: ${value} ${marker} | ${bar}${negativeMark}\n`;
-                    
-                    // 如果不是最后一个，添加连接线
-                    if (index < favorHistory.length - 1) {
-                        mdContent += "  ↓\n";
-                    }
-                });
+                // 获取对应的时间戳信息
+            const timeStamps = [];
+            // 当前时间（用于最后一个点）
+            timeStamps.push(new Date());
+            // 为历史点添加对应的时间戳
+            for (let i = recentNotes.length - 1; i >= 0; i--) {
+                const note = recentNotes[i];
+                if (note.timestamp) {
+                    timeStamps.unshift(new Date(note.timestamp));
+                } else {
+                    timeStamps.unshift(new Date());
+                }
+            }
+            
+            // 格式化时间显示，包含更多信息
+            function formatTimeForChart(date) {
+                if (!(date instanceof Date) || isNaN(date.getTime())) {
+                    return '--/-- --:--';
+                }
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const day = date.getDate().toString().padStart(2, '0');
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                return `${month}/${day} ${hours}:${minutes}`;
+            }
+            
+            // 生成表头和分隔线，优化对齐
+            mdContent += "时间点            | 好感度值 | 柱状图\n";
+            mdContent += "-----------------|---------|------\n";
+            
+            // 找出最大值和最小值，用于优化显示范围
+            const displayMaxValue = Math.max(...favorHistory);
+            const displayMinValue = Math.min(...favorHistory);
+            const displayRange = Math.max(1, displayMaxValue - displayMinValue);
+            
+            // 根据实际范围动态调整柱状图长度，确保更好的视觉效果
+            function calculateBarLength(value) {
+                // 确保好感度值在0-100范围内
+                const normalizedValue = Math.max(0, Math.min(100, value));
+                // 计算柱状图长度，最多25个字符
+                return Math.max(0, Math.floor((normalizedValue / 100) * 25));
+            }
+            
+            // 生成文本图表（横轴时间，竖轴好感度）
+            favorHistory.forEach((value, index) => {
+                const isCurrent = index === favorHistory.length - 1;
+                const timestamp = timeStamps[index];
+                let timeLabel = formatTimeForChart(timestamp);
+                
+                // 当前时间点添加特殊标记
+                if (isCurrent) {
+                    timeLabel += " [现在]";
+                }
+                
+                // 根据好感度值确定显示的符号和颜色
+                let symbol = "⬛";
+                if (value < 30) symbol = "🔴";
+                else if (value < 60) symbol = "🟠";
+                else symbol = "🟢";
+                
+                // 生成条形图
+                const barLength = calculateBarLength(value);
+                const bar = barLength > 0 ? symbol.repeat(barLength) : '无';
+                
+                // 对于负好感度，添加特殊标记
+                const negativeMark = value < 0 ? ' ⚠️' : '';
+                
+                // 优化数值显示，添加正负号和对齐
+                let valueDisplay;
+                if (value > 0) {
+                    valueDisplay = `+${value}`;
+                } else if (value < 0) {
+                    valueDisplay = value.toString();
+                } else {
+                    valueDisplay = "0";
+                }
+                
+                // 使用表格格式展示，更清晰地显示横轴时间和竖轴好感度
+                mdContent += `${timeLabel.padEnd(17)} | ${valueDisplay.padStart(8)} | ${bar}${negativeMark}\n`;
+            });
+            
+            // 添加好感度范围参考线
+            mdContent += "-----------------|---------|--------------------------\n";
+            mdContent += "好感度范围        | 0 --- 100 | 视觉比例显示\n\n";
+            
+            // 添加详细图例说明
+            mdContent += "图例说明：\n";
+            mdContent += "🟢 高好感度 (60-100) - 关系良好\n";
+            mdContent += "🟠 中等好感度 (30-59) - 关系一般\n";
+            mdContent += "🔴 低好感度 (0-29) - 需要改善\n";
+            mdContent += "⚠️ 负好感度警告 - 关系紧张\n";
             } else {
                 mdContent += "暂无好感度记录\n";
             }
