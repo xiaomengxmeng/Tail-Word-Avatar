@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         摸鱼派鱼油好感度系统
 // @namespace    http://tampermonkey.net/
-// @version      1.2.1
+// @version      1.2.2
 // @description  管理摸鱼派鱼油的好感度系统，支持好感度查询、修改和导入导出
 // @author      ZeroDream
 // @match        https://fishpi.cn/*
@@ -15,7 +15,7 @@
     'use strict';
 
     // 版本信息
-    const version = '1.2.1';
+    const version = '1.2.2';
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
