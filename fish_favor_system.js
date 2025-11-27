@@ -91,7 +91,7 @@
         mdContent += `- **更新时间**: ${formatDate(fish.updatedAt)} ⏱️\n\n`;
         
         // 好感度变化历史（简洁文字显示）
-        mdContent += `## 好感度变化历史\n`;
+
         if (fish.notes && fish.notes.length > 0) {
             // 最近10条记录
             const recentNotes = fish.notes.slice(-10).reverse();
@@ -108,8 +108,6 @@
                 }
             }
             
-            // 使用简单的文字方式展示好感度变化
-            mdContent += "## 好感度变化趋势\n\n";
             
             // 获取对应的时间戳信息
             const timeStamps = [];
@@ -164,9 +162,9 @@
             mdContent += "\n💡 好感度范围：-100-100\n\n";
             
             // 最近5条备注
-            mdContent += `## 最近5条记录\n`;
-            const last5Notes = fish.notes.slice(-5).reverse();
-            last5Notes.forEach(note => {
+            mdContent += `## 最近1条记录\n`;
+            const last1Notes = fish.notes.slice(-1).reverse();
+            last1Notes.forEach(note => {
                 const date = formatDate(note.timestamp);
                 let favorInfo = '';
                 let favorEmoji = '';
