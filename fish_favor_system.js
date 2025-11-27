@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         摸鱼派鱼油好感度系统
 // @namespace    http://tampermonkey.net/
-// @version      1.1.8
+// @version      1.1.9
 // @description  管理摸鱼派鱼油的好感度系统，支持好感度查询、修改和导入导出
 // @author      ZeroDream
 // @match        https://fishpi.cn/*
@@ -15,7 +15,7 @@
     'use strict';
 
     // 版本信息
-    const version = '1.1.8';
+    const version = '1.1.9';
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
@@ -1444,7 +1444,11 @@
             fishList.appendChild(fishItem);
         });
         
-        // 添加测试模式开关
+        // 先处理内容容器内部的所有内容...
+        // 然后在面板底部添加固定的测试模式开关区域
+        // 将其移出内容滚动区域，确保始终可见
+        
+        // 添加测试模式开关（在面板底部，固定显示）
         const testModeSection = document.createElement('div');
         testModeSection.style.cssText = `
             padding: 15px 20px;
@@ -1453,6 +1457,7 @@
             align-items: center;
             justify-content: space-between;
             background-color: #fafafa;
+            border-radius: 0 0 12px 12px;
         `;
         
         const testModeLabel = document.createElement('span');
@@ -1493,6 +1498,20 @@
             border-radius: 34px;
         `;
         
+        // 添加滑块内部圆点，增强视觉效果
+        const sliderDot = document.createElement('span');
+        sliderDot.style.cssText = `
+            position: absolute;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        `;
+        testModeSlider.appendChild(sliderDot);
+        
         testModeSlider.addEventListener('mouseenter', () => {
             if (!testMode) {
                 testModeSlider.style.backgroundColor = '#a0a0a0';
@@ -1508,11 +1527,13 @@
         // 初始化滑块样式
         if (testMode) {
             testModeSlider.style.backgroundColor = '#40a9ff';
+            sliderDot.style.transform = 'translateX(26px)';
         }
         
         testModeCheckbox.addEventListener('change', function() {
             testMode = this.checked;
             testModeSlider.style.backgroundColor = this.checked ? '#40a9ff' : '#ccc';
+            sliderDot.style.transform = this.checked ? 'translateX(26px)' : 'translateX(0)';
             showNotification(testMode ? '测试模式已开启' : '测试模式已关闭', 'info');
             saveFavorConfig();
         });
