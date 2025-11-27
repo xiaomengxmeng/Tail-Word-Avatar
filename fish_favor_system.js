@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         摸鱼派鱼油好感度系统
 // @namespace    http://tampermonkey.net/
-// @version      1.1.5
+// @version      1.1.6
 // @description  管理摸鱼派鱼油的好感度系统，支持好感度查询、修改和导入导出
 // @author      ZeroDream
 // @match        https://fishpi.cn/*
@@ -15,7 +15,10 @@
     'use strict';
 
     // 版本信息
-    const version = '1.1.5';
+const version = '1.1.6';
+
+// 测试模式状态
+let testMode = false;
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
@@ -36,9 +39,113 @@
                 openFavorManagerPanel();
             });
         }
-        // 创建界面按钮
-        createFavorButton();
-        console.log('好感度系统初始化完成');
+    }
+    
+    // 输出鱼油好感度图表
+    function outputFishChart(fish) {
+        // 生成MD格式图表
+        const favorLevel = getFavorLevel(fish.favor);
+        const chartBar = generateChartBar(fish.favor);
+        const timestamp = new Date().toLocaleString('zh-CN');
+        
+        const mdMessage = `## ${fish.name} 的好感度信息
+
+**好感度值：** ${fish.favor}/100
+**好感等级：** ${favorLevel}
+**更新时间：** ${timestamp}
+
+**好感度图表：**
+\`\`\`
+${chartBar}
+\`\`\`
+
+*由好感度系统 v${version} 生成*`;
+        
+        // 检查是否有备注信息
+        if (fish.notes && fish.notes.length > 0) {
+            const latestNote = fish.notes[0];
+            const noteMessage = `
+**最新备注：** [${latestNote.timestamp}] ${latestNote.content}`;
+            mdMessage += noteMessage;
+        }
+        
+        // 根据测试模式决定是否发送到聊天室
+        if (testMode) {
+            console.log('测试模式 - 图表消息预览：', mdMessage);
+            showNotification(`图表已生成（测试模式），请在控制台查看`, 'info');
+        } else {
+            sendMsgApi(mdMessage);
+            showNotification(`已将 ${fish.name} 的好感度图表发送到聊天室`, 'success');
+        }
+    }
+    
+    // 根据好感度获取等级描述
+    function getFavorLevel(favor) {
+        if (favor >= 90) return '❤️ 生死之交';
+        if (favor >= 80) return '💖 亲密无间';
+        if (favor >= 70) return '😊 友好相处';
+        if (favor >= 60) return '🙂 关系不错';
+        if (favor >= 50) return '😐 平淡如水';
+        if (favor >= 40) return '😕 关系一般';
+        if (favor >= 30) return '😟 有些疏远';
+        if (favor >= 20) return '😠 不太友好';
+        if (favor >= 10) return '😡 关系紧张';
+        if (favor >= 0) return '💢 势不两立';
+        return '💣 仇人相见';
+    }
+    
+    // 生成图表进度条
+    function generateChartBar(favor) {
+        const normalizedFavor = Math.max(0, Math.min(100, favor));
+        const barLength = 20;
+        const filledLength = Math.round((normalizedFavor / 100) * barLength);
+        const emptyLength = barLength - filledLength;
+        
+        const filled = '█'.repeat(filledLength);
+        const empty = '░'.repeat(emptyLength);
+        const percentage = normalizedFavor.toFixed(0);
+        
+        return `${percentage}% |${filled}${empty}|`;
+    }
+        
+        // 发送消息的API函数
+    function sendMsgApi(msg) {
+        // 在测试模式下，不发送消息到聊天室，只在控制台输出
+        if (testMode) {
+            console.log('测试模式：以下内容不会发送到聊天室', msg);
+            // 显示通知提示用户当前是测试模式
+            if (typeof showNotification === 'function') {
+                showNotification('测试模式：图表已在控制台显示，不会发送到聊天室', 'info');
+            }
+            return;
+        }
+        
+        var msgData = {
+            "content": msg,
+            "client": "Web/梦梦"
+        };
+        
+        $.ajax({
+            url: "https://fishpi.cn/chat-room/send",
+            type: "POST",
+            async: false,
+            dataType: "json",
+            contentType: "application/json",
+            data: JSON.stringify(msgData),
+            success: function (e) {
+                // 成功回调
+                console.log('发送成功');
+                if (typeof showNotification === 'function') {
+                    showNotification('图表已成功发送到聊天室', 'success');
+                }
+            },
+            error: function (e) {
+                console.error('发送消息失败:', e);
+                if (typeof showNotification === 'function') {
+                    showNotification('发送失败，请检查网络连接', 'error');
+                }
+            }
+        });
     }
     
     // 按钮位置存储键名
@@ -766,6 +873,101 @@
 
         contentContainer.appendChild(importExportSection);
 
+        // 测试模式开关区域
+        const testModeSection = document.createElement('div');
+        testModeSection.style.cssText = `
+            margin-top: 20px;
+            padding: 15px;
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        `;
+        
+        // 测试模式标签
+        const testModeLabel = document.createElement('div');
+        testModeLabel.style.cssText = `
+            font-size: 14px;
+            color: #389e0d;
+            font-weight: 500;
+        `;
+        testModeLabel.innerHTML = '<span style="margin-right: 8px;">⚙️</span>测试模式（图表仅预览不发送）';
+        testModeSection.appendChild(testModeLabel);
+        
+        // 开关按钮
+        const testModeToggle = document.createElement('label');
+        testModeToggle.style.cssText = `
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        `;
+        
+        // 隐藏默认的复选框
+        const toggleInput = document.createElement('input');
+        toggleInput.type = 'checkbox';
+        toggleInput.style.cssText = 'opacity: 0; width: 0; height: 0;';
+        toggleInput.checked = testMode;
+        
+        // 滑块
+        const toggleSlider = document.createElement('span');
+        toggleSlider.style.cssText = `
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        `;
+        
+        // 滑块圆点
+        const sliderDot = document.createElement('span');
+        sliderDot.style.cssText = `
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        `;
+        
+        // 更新滑块样式
+        function updateSliderStyle() {
+            if (testMode) {
+                toggleSlider.style.backgroundColor = '#52c41a';
+                sliderDot.style.transform = 'translateX(26px)';
+            } else {
+                toggleSlider.style.backgroundColor = '#ccc';
+                sliderDot.style.transform = 'translateX(0)';
+            }
+        }
+        
+        updateSliderStyle();
+        
+        // 切换测试模式
+        toggleInput.addEventListener('change', function() {
+            testMode = this.checked;
+            updateSliderStyle();
+            saveFavorConfig(); // 保存测试模式状态
+            showNotification(testMode ? '已开启测试模式' : '已关闭测试模式', 'info');
+        });
+        
+        testModeToggle.appendChild(toggleInput);
+        testModeToggle.appendChild(toggleSlider);
+        toggleSlider.appendChild(sliderDot);
+        testModeSection.appendChild(testModeToggle);
+        
+        contentContainer.appendChild(testModeSection);
+
         // 关闭按钮
         const closeBtn = document.createElement('button');
         closeBtn.textContent = '关闭';
@@ -1134,6 +1336,35 @@
                 gap: 8px;
                 margin-top: 10px;
             `;
+            
+            // 图表输出按钮
+            const chartBtn = document.createElement('button');
+            chartBtn.textContent = '输出图表';
+            chartBtn.style.cssText = `
+                flex: 1;
+                padding: 6px 12px;
+                background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                transition: all 0.3s ease;
+            `;
+            
+            chartBtn.addEventListener('mouseenter', function() {
+                this.style.boxShadow = '0 2px 8px rgba(82, 196, 26, 0.3)';
+                this.style.transform = 'translateY(-1px)';
+            });
+            
+            chartBtn.addEventListener('mouseleave', function() {
+                this.style.boxShadow = 'none';
+                this.style.transform = 'translateY(0)';
+            });
+            
+            chartBtn.addEventListener('click', function() {
+                outputFishChart(fish);
+            });
 
             // 编辑按钮
             const editBtn = document.createElement('button');
@@ -1205,6 +1436,7 @@
                 }
             });
 
+            actionButtons.appendChild(chartBtn);
             actionButtons.appendChild(editBtn);
             actionButtons.appendChild(resetBtn);
             actionButtons.appendChild(deleteBtn);
