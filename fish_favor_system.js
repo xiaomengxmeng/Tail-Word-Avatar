@@ -105,6 +105,13 @@
     
     // 发送消息到聊天室的API函数
     function sendMsgApi(msg) {
+        // 如果测试模式开启，只输出到控制台
+        if (testMode) {
+            console.log('测试模式 - 消息预览:', msg);
+            showNotification('消息已在控制台输出（测试模式）', 'info');
+            return;
+        }
+        
         var msgData = {
             "content": msg,
             "client": "Web/小尾巴快捷端"
@@ -116,9 +123,11 @@
             data: JSON.stringify(msgData),
             success: function (e) {
                 // 成功回调
+                showNotification('消息发送成功', 'success');
             },
             error: function (e) {
                 console.error('发送消息失败:', e);
+                showNotification('消息发送失败', 'error');
             }
         });
     }
@@ -1513,6 +1522,9 @@
         testModeSection.appendChild(testModeLabel);
         testModeSection.appendChild(testModeSwitch);
         panel.appendChild(testModeSection);
+        
+        // 将面板添加到DOM
+        document.body.appendChild(panel);
     }
 
     // 更新好感度显示
