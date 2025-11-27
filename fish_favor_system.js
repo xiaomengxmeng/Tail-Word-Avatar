@@ -1004,16 +1004,28 @@
         document.body.appendChild(panel);
 
         // 更新鱼油列表
-        updateFishList();
+        updateFishList('', panel);
 
         // 实现面板拖动功能
         makeDraggable(panel, titleBar);
     }
 
+    // 获取好感度等级的函数
+    function getFavorLevel(favor) {
+        if (favor >= 80) return '亲密无间';
+        if (favor >= 60) return '亲密';
+        if (favor >= 40) return '友好';
+        if (favor >= 20) return '一般';
+        return '陌生';
+    }
+
     // 更新鱼油列表
-    function updateFishList(searchTerm = '') {
+    function updateFishList(searchTerm = '', panel = null) {
         const fishList = document.getElementById('fish-list');
         if (!fishList) return;
+        
+        // 将panel存储到全局，以便其他函数可以访问
+        window.fishPanel = panel;
 
         // 清空列表
         fishList.innerHTML = '';
@@ -1360,9 +1372,7 @@
                 this.style.transform = 'translateY(0)';
             });
             
-            chartBtn.addEventListener('click', function() {
-                outputFishChart(fish);
-            });
+            // 图表输出功能将在下方实现
 
             // 编辑按钮
             const editBtn = document.createElement('button');
