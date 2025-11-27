@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         摸鱼派鱼油好感度系统
 // @namespace    http://tampermonkey.net/
-// @version      1.2.0
+// @version      1.2.1
 // @description  管理摸鱼派鱼油的好感度系统，支持好感度查询、修改和导入导出
 // @author      ZeroDream
 // @match        https://fishpi.cn/*
@@ -15,7 +15,7 @@
     'use strict';
 
     // 版本信息
-    const version = '1.2.0';
+    const version = '1.2.1';
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
@@ -55,12 +55,37 @@
             return date.toLocaleString('zh-CN');
         }
         
+        // 为好感度等级添加emoji
+        function getLevelEmoji(favor) {
+            const clampedFavor = Math.max(-100, Math.min(100, favor));
+            if (clampedFavor >= 90) return '❤️';
+            if (clampedFavor >= 80) return '💕';
+            if (clampedFavor >= 70) return '💖';
+            if (clampedFavor >= 60) return '💗';
+            if (clampedFavor >= 50) return '💓';
+            if (clampedFavor >= 40) return '😊';
+            if (clampedFavor >= 30) return '🙂';
+            if (clampedFavor >= 20) return '😃';
+            if (clampedFavor >= 10) return '😐';
+            if (clampedFavor >= 0) return '😶';
+            if (clampedFavor >= -10) return '😕';
+            if (clampedFavor >= -20) return '😟';
+            if (clampedFavor >= -30) return '😔';
+            if (clampedFavor >= -40) return '😐';
+            if (clampedFavor >= -50) return '😕';
+            if (clampedFavor >= -60) return '😟';
+            if (clampedFavor >= -70) return '😔';
+            if (clampedFavor >= -80) return '😢';
+            if (clampedFavor >= -90) return '😭';
+            return '💔';
+        }
+
         // 基础信息
         mdContent += `## 基础信息\n`;
-        mdContent += `- **当前好感度**: ${fish.favor}\n`;
-        mdContent += `- **好感度等级**: ${getFavorLevel(fish.favor)}\n`;
-        mdContent += `- **创建时间**: ${formatDate(fish.createdAt)}\n`;
-        mdContent += `- **更新时间**: ${formatDate(fish.updatedAt)}\n\n`;
+        mdContent += `- **当前好感度**: ${fish.favor} ${getLevelEmoji(fish.favor)}\n`;
+        mdContent += `- **好感度等级**: ${getFavorLevel(fish.favor)} ${getLevelEmoji(fish.favor)}\n`;
+        mdContent += `- **创建时间**: ${formatDate(fish.createdAt)} 🕐\n`;
+        mdContent += `- **更新时间**: ${formatDate(fish.updatedAt)} ⏱️\n\n`;
         
         // 好感度变化历史图表（使用字符画简单表示）
         mdContent += `## 好感度变化历史\n`;
@@ -80,16 +105,36 @@
                 }
             }
             
-            // 生成简单的字符图表
-            const maxFavor = Math.max(...favorHistory, 20);
-            const barWidth = 40;
+            // 优化的字符图表生成
+            const maxFavor = Math.max(...favorHistory, 50); // 确保有一定的基准值
+            const minFavor = Math.min(...favorHistory, 0);
+            const barWidth = 45;
+            const range = maxFavor - minFavor;
             
             mdContent += "```\n";
+            // 添加范围标识
+            mdContent += `范围: ${minFavor} - ${maxFavor}\n`;
+            mdContent += "=" .repeat(60) + "\n";
+            
             favorHistory.forEach((value, index) => {
-                const barLength = Math.round((value / maxFavor) * barWidth);
-                const bar = '█'.repeat(barLength) + '░'.repeat(barWidth - barLength);
-                mdContent += `${index.toString().padStart(2, '0')}: ${value.toString().padStart(3, ' ')} ${bar}\n`;
+                // 根据相对位置计算进度条长度
+                const relativeValue = value - minFavor;
+                const barLength = Math.round((relativeValue / range) * barWidth);
+                
+                // 根据好感度值使用不同的字符（增加视觉区分）
+                let barChar = '█';
+                let marker = '';
+                if (index === favorHistory.length - 1) { // 当前值
+                    marker = ' <-- 当前';
+                }
+                
+                // 对于负值使用不同的表示
+                const bar = value >= 0 ? barChar.repeat(Math.max(0, barLength)) : ' ';
+                const negBar = value < 0 ? '░'.repeat(Math.max(0, Math.abs(barLength))) : '';
+                
+                mdContent += `${index.toString().padStart(2, '0')}: ${value.toString().padStart(4, ' ')} ${negBar}${bar}${marker}\n`;
             });
+            mdContent += "=" .repeat(60) + "\n";
             mdContent += "```\n\n";
             
             // 最近5条备注
@@ -98,10 +143,17 @@
             last5Notes.forEach(note => {
                 const date = formatDate(note.timestamp);
                 let favorInfo = '';
+                let favorEmoji = '';
                 if (note.favorChange) {
-                    favorInfo = note.favorChange > 0 ? `(+${note.favorChange})` : `(${note.favorChange})`;
+                    if (note.favorChange > 0) {
+                        favorInfo = `(+${note.favorChange})`;
+                        favorEmoji = '📈';
+                    } else {
+                        favorInfo = `(${note.favorChange})`;
+                        favorEmoji = '📉';
+                    }
                 }
-                mdContent += `- **${date}** ${favorInfo} ${note.content || ''}\n`;
+                mdContent += `- **${date}** ${note.content || ''}${favorInfo ? ' ' + favorInfo + ' ' + favorEmoji : ' 📝'}\n`;
             });
         } else {
             mdContent += "暂无好感度变化记录\n\n";
@@ -1033,11 +1085,30 @@
 
     // 获取好感度等级的函数
     function getFavorLevel(favor) {
-        if (favor >= 80) return '亲密无间';
-        if (favor >= 60) return '亲密';
-        if (favor >= 40) return '友好';
-        if (favor >= 20) return '一般';
-        return '陌生';
+        // 确保好感度在-100到100之间
+        const clampedFavor = Math.max(-100, Math.min(100, favor));
+        
+        // 10度一档的等级系统
+        if (clampedFavor >= 90) return '生死之交';
+        if (clampedFavor >= 80) return '亲密无间';
+        if (clampedFavor >= 70) return '莫逆之交';
+        if (clampedFavor >= 60) return '亲密好友';
+        if (clampedFavor >= 50) return '挚友';
+        if (clampedFavor >= 40) return '好友';
+        if (clampedFavor >= 30) return '要好';
+        if (clampedFavor >= 20) return '友善';
+        if (clampedFavor >= 10) return '和气';
+        if (clampedFavor >= 0) return '相识';
+        if (clampedFavor >= -10) return '认识';
+        if (clampedFavor >= -20) return '泛泛之交';
+        if (clampedFavor >= -30) return '普通关系';
+        if (clampedFavor >= -40) return '不太熟悉';
+        if (clampedFavor >= -50) return '接触不多';
+        if (clampedFavor >= -60) return '很少互动';
+        if (clampedFavor >= -70) return '了解有限';
+        if (clampedFavor >= -80) return '几乎陌生';
+        if (clampedFavor >= -90) return '素不相识';
+        return '从未谋面';
     }
 
     // 更新鱼油列表
