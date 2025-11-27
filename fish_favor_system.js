@@ -105,11 +105,11 @@
                 }
             }
             
-            // 使用Mermaid图表展示好感度变化
+            // 使用Mermaid图表展示好感度变化（使用更简单的语法）
             mdContent += "```mermaid\n";
             mdContent += "graph LR\n";
             
-            // 添加好感度数据节点
+            // 添加好感度数据节点和连接
             favorHistory.forEach((value, index) => {
                 // 根据好感度值确定节点颜色
                 let color = "green";
@@ -118,22 +118,20 @@
                 
                 // 为当前值添加特殊标记
                 const isCurrent = index === favorHistory.length - 1;
-                const nodeLabel = isCurrent ? `${value} (当前)` : value.toString();
+                const nodeLabel = isCurrent ? value + "(当前)" : value.toString();
                 
-                mdContent += `    A${index}["${nodeLabel}"] --- |"第${index}步"|`;
+                // 添加节点
+                mdContent += `    A${index}[${nodeLabel}]`;
+                
+                // 只在不是最后一个节点时添加箭头
+                if (index < favorHistory.length - 1) {
+                    mdContent += " --> A" + (index + 1);
+                }
+                mdContent += "\n";
+                
+                // 添加样式
+                mdContent += `    style A${index} fill:${color},stroke:${color}\n`;
             });
-            
-            // 移除最后一个多余的箭头
-            mdContent = mdContent.slice(0, mdContent.lastIndexOf("--- |")) + "\n";
-            
-            // 添加好感度范围说明
-            mdContent += "\n    subgraph 好感度范围说明\n";
-            mdContent += "        H0[0] --- H30[30] --- H60[60] --- H100[100]\n";
-            mdContent += "        style H0 fill:red,stroke:red\n";
-            mdContent += "        style H30 fill:orange,stroke:orange\n";
-            mdContent += "        style H60 fill:yellow,stroke:yellow\n";
-            mdContent += "        style H100 fill:green,stroke:green\n";
-            mdContent += "    end\n";
             
             mdContent += "```\n\n";
             mdContent += "> 💡 好感度范围：0-100\n\n";
@@ -439,15 +437,37 @@
                             updatedAt: fish.updatedAt || new Date()
                         };
                     }
-                    // 为没有时间戳字段的鱼油数据添加默认值
+                    // 为没有时间戳字段的鱼油数据添加默认值和ID
+                    const updatedFish = {
+                        ...fish,
+                        id: fish.id || generateUniqueId() // 确保有唯一ID
+                    };
+                    
                     if (!fish.createdAt || !fish.updatedAt) {
-                        return {
-                            ...fish,
-                            createdAt: fish.createdAt || new Date(),
-                            updatedAt: fish.updatedAt || new Date()
-                        };
+                        // 尝试从notes数组中提取时间信息
+                        let earliestTime = new Date();
+                        let latestTime = new Date();
+                        
+                        if (fish.notes && fish.notes.length > 0) {
+                            // 从notes中提取时间戳
+                            const noteTimes = fish.notes.map(note => {
+                                if (note.timestampObj) return new Date(note.timestampObj);
+                                if (note.timestamp) return new Date(note.timestamp);
+                                return new Date();
+                            }).filter(date => !isNaN(date.getTime()));
+                            
+                            if (noteTimes.length > 0) {
+                                // 正确比较Date对象
+                                earliestTime = new Date(Math.min(...noteTimes.map(d => d.getTime())));
+                                latestTime = new Date(Math.max(...noteTimes.map(d => d.getTime())));
+                            }
+                        }
+                        
+                        updatedFish.createdAt = fish.createdAt || earliestTime;
+                        updatedFish.updatedAt = fish.updatedAt || latestTime;
                     }
-                    return fish;
+                    
+                    return updatedFish;
                 });
                 console.log('好感度配置加载成功，已完成数据迁移');
                 console.log('测试模式状态:', testMode ? '开启' : '关闭');
