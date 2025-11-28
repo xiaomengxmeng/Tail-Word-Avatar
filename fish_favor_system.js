@@ -1731,8 +1731,10 @@
         
         // 测试模式开关已经在面板顶部实现，这里不再重复添加
         
-        // 将面板添加到DOM
-        document.body.appendChild(panel);
+        // 将面板添加到DOM（确保panel是有效的DOM节点）
+        if (panel && panel.nodeType === Node.ELEMENT_NODE) {
+            document.body.appendChild(panel);
+        }
     }
 
     // 更新好感度显示
