@@ -196,7 +196,7 @@
         
         var msgData = {
             "content": msg,
-            "client": "Web/小尾巴快捷端"
+            "client": "小梦的爱"
         };
         $.ajax({
             url: "https://fishpi.cn/chat-room/send",

@@ -375,7 +375,7 @@ window.editButton = function(index) {
     function sendMsgApi(msg) {
         var msgData = {
             "content": msg,
-            "client": "Web/按钮管理面板"
+            "client": "小梦的魔法"
         };
         $.ajax({
             url: "https://fishpi.cn/chat-room/send",
