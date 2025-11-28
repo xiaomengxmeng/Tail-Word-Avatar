@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         摸鱼派鱼油好感度系统
 // @namespace    http://tampermonkey.net/
-// @version      1.2.3
+// @version      1.2.4
 // @description  管理摸鱼派鱼油的好感度系统，支持好感度查询、修改和导入导出
 // @author      ZeroDream
 // @match        https://fishpi.cn/*
@@ -15,7 +15,7 @@
     'use strict';
 
     // 版本信息
-    const version = '1.2.3';
+    const version = '1.2.4';
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
@@ -48,7 +48,8 @@
     
     // 生成MD格式的好感度图表
     function generateFishChartMD(fish) {
-        let mdContent = `# ${fish.name} 的好感度信息\n\n`;
+        // 使用小号字体和简洁格式
+        let mdContent = `<small>${fish.name} 的好感度信息 | `;
         
         // 格式化时间函数，处理无效日期
         function formatDate(dateString) {
@@ -135,9 +136,8 @@
                 return `${month}/${day} ${hours}:${minutes}`;
             }
             
-            // 生成简洁的文字列表
-            mdContent += "**时间点** - **好感度值**\n";
-            mdContent += "---\n";
+            // 生成简洁的文字列表 - 移除粗体和分隔线
+            mdContent += "时间点 - 好感度值\n";
             
             // 生成文字形式的好感度变化记录
             favorHistory.forEach((value, index) => {
@@ -156,13 +156,11 @@
                 else if (value < 30) status = "🟡 低";
                 
                 // 显示好感度值和状态
-                mdContent += `- ${timeLabel} - **${value}** (${status})\n`;
+                mdContent += `- ${timeLabel} - ${value} (${status})\n`;
             });
             
-            mdContent += "\n💡 好感度范围：-100-100\n\n";
-            
-            // 最近5条备注
-            mdContent += `## 最近1条记录\n`;
+            // 最近1条备注 - 移除标题
+            mdContent += "\n最近记录：\n";
             const last1Notes = fish.notes.slice(-1).reverse();
             last1Notes.forEach(note => {
                 const date = formatDate(note.timestamp);
@@ -177,7 +175,7 @@
                         favorEmoji = '📉';
                     }
                 }
-                mdContent += `- **${date}** ${note.content || ''}${favorInfo ? ' ' + favorInfo + ' ' + favorEmoji : ' 📝'}\n`;
+                mdContent += `- ${date} ${note.content || ''}${favorInfo ? ' ' + favorInfo + ' ' + favorEmoji : ' 📝'}\n`;
             });
         } else {
             mdContent += "暂无好感度变化记录\n\n";
@@ -1134,26 +1132,26 @@
         // 确保好感度在-100到100之间
         const clampedFavor = Math.max(-100, Math.min(100, favor));
         
-        // 10度一档的等级系统，全部使用四字词语
-        if (clampedFavor >= 90) return '生死之交';
-        if (clampedFavor >= 80) return '亲密无间';
-        if (clampedFavor >= 70) return '莫逆之交';
-        if (clampedFavor >= 60) return '刎颈之交';
-        if (clampedFavor >= 50) return '金兰之交';
-        if (clampedFavor >= 40) return '竹马之交';
-        if (clampedFavor >= 30) return '君子之交';
-        if (clampedFavor >= 20) return '相敬如宾';
-        if (clampedFavor >= 10) return '和颜悦色';
-        if (clampedFavor >= 0) return '点头之交';
-        if (clampedFavor >= -10) return '泛泛之交';
-        if (clampedFavor >= -20) return '面熟陌生';
-        if (clampedFavor >= -30) return '形同陌路';
-        if (clampedFavor >= -40) return '素未谋面';
-        if (clampedFavor >= -50) return '寡言少语';
-        if (clampedFavor >= -60) return '敬而远之';
-        if (clampedFavor >= -70) return '若即若离';
-        if (clampedFavor >= -80) return '相见恨晚';
-        if (clampedFavor >= -90) return '反目成仇';
+        // 10度一档的等级系统，全部使用四字词语（朋友关系递进）
+        if (clampedFavor >= 90) return '刎颈之交';  // 最高级别的朋友关系
+        if (clampedFavor >= 80) return '生死之交';  // 可以共生死的朋友
+        if (clampedFavor >= 70) return '莫逆之交';  // 非常要好的朋友
+        if (clampedFavor >= 60) return '金兰之交';  // 结拜兄弟般的友谊
+        if (clampedFavor >= 50) return '管鲍之交';  // 深厚的友谊
+        if (clampedFavor >= 40) return '八拜之交';  // 结拜的好友
+        if (clampedFavor >= 30) return '总角之交';  // 从小玩到大的朋友
+        if (clampedFavor >= 20) return '君子之交';  // 互相尊重的朋友
+        if (clampedFavor >= 10) return '同气相求';  // 志趣相投的朋友
+        if (clampedFavor >= 0) return '点头之交';   // 普通相识
+        if (clampedFavor >= -10) return '泛泛之交'; // 一般关系
+        if (clampedFavor >= -20) return '一面之交'; // 仅见过一次
+        if (clampedFavor >= -30) return '形同陌路'; // 像陌生人一样
+        if (clampedFavor >= -40) return '话不投机'; // 没有共同语言
+        if (clampedFavor >= -50) return '敬而远之'; // 保持距离
+        if (clampedFavor >= -60) return '视同路人'; // 当作陌生人
+        if (clampedFavor >= -70) return '若即若离'; // 关系疏远
+        if (clampedFavor >= -80) return '反目成仇'; // 变成仇人
+        if (clampedFavor >= -90) return '不共戴天'; // 非常敌对
         return '势如水火';
     }
 
