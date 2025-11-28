@@ -196,7 +196,7 @@
         
         var msgData = {
             "content": msg,
-            "client": "Web/小梦的魔法" + version_us
+            "client": "Web/小梦的魔法" + version
         };
         $.ajax({
             url: "https://fishpi.cn/chat-room/send",
