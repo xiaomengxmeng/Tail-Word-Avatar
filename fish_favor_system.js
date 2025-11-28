@@ -49,7 +49,7 @@
     // 生成MD格式的好感度图表
     function generateFishChartMD(fish) {
         // 使用简洁格式
-        let mdContent = `${fish.name} 的好感度信息 | `;
+        let mdContent = `${fish.name} 的好感度信息 | \n`;
         
         // 格式化时间函数，处理无效日期
         function formatDate(dateString) {
