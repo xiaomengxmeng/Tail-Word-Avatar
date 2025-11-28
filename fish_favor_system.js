@@ -48,8 +48,8 @@
     
     // 生成MD格式的好感度图表
     function generateFishChartMD(fish) {
-        // 使用小号字体和简洁格式
-        let mdContent = `<small>${fish.name} 的好感度信息 | `;
+        // 使用简洁格式
+        let mdContent = `${fish.name} 的好感度信息 | `;
         
         // 格式化时间函数，处理无效日期
         function formatDate(dateString) {
@@ -151,9 +151,9 @@
                 }
                 
                 // 根据好感度值确定显示的符号
-                let status = "🟠 中等";
-                if (value >= 60) status = "🟢 高";
-                else if (value < 30) status = "🟡 低";
+                let status = "🟠 ";
+                if (value >= 60) status = "🟢 ";
+                else if (value < 30) status = "🟡 ";
                 
                 // 显示好感度值和状态
                 mdContent += `- ${timeLabel} - ${value} (${status})\n`;
