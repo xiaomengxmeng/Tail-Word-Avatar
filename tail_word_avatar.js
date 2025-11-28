@@ -602,7 +602,6 @@
         ChatRoom.isSend || (ChatRoom.isSend = !0,
             e = {
                 content: t = ChatRoom.editor.getValue(),
-                client: "Web/单词头像功能集" + version_us
             },
             ChatRoom.editor.setValue(""),
             $.ajax({
