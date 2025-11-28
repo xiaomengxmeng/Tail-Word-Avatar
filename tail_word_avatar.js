@@ -632,7 +632,7 @@
                             return originalContent + wordMsg + wbMsg;
                         }
                     }(),
-                    client: "Web/单词头像功能集" + version_us
+        
                 }),
                 beforeSend: function () {
                     $("#form button.red").attr("disabled", "disabled").css("opacity", "0.3")
