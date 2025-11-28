@@ -518,7 +518,7 @@
     function sendMsgApi(msg) {
         var msgData = {
             "content": msg,
-            "client": "Web/单词头像功能集" + version_us
+            "client": "小魔法" + version_us
         };
         $.ajax({
             url: Label.servePath + "/chat-room/send",
