@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         鱼派单词头像功能集
 // @namespace    http://tampermonkey.net/
-// @version      1.0.1
+// @version      1.0.4
 // @description  整合单词功能和头像生成功能的精简版脚本   try to thank APTX-4869!
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -13,7 +13,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.1";
+    const version_us = "v1.0.4";
 
     // 小尾巴开关状态
     var suffixFlag = window.localStorage['xwb_flag'] ? JSON.parse(window.localStorage['xwb_flag']) : true;
@@ -73,6 +73,16 @@
 
     // 获取当前小尾巴文本
     function getCurrentSuffixText() {
+        // 优先检查是否有自定义小尾巴
+        const isCustom = window.localStorage['xwb_is_custom_suffix'] === 'true';
+        const customSuffix = window.localStorage['xwb_custom_suffix'];
+
+        // 如果设置了自定义小尾巴且不为空，则返回自定义文本
+        if (isCustom && customSuffix) {
+            return customSuffix;
+        }
+
+        // 否则返回预设的小尾巴选项
         return suffixOptions[getCurrentSuffixIndex()] || suffixOptions[0];
     }
 
@@ -614,7 +624,7 @@
                         let originalContent = t;
 
                         // 处理小尾巴和单词
-                        if (t.trim().length == 0 || (!suffixFlag) || needwb == 0 || t.trim().startsWith('凌 ') || t.trim().startsWith('鸽 ') || t.trim().startsWith('小冰 ')|| t.trim().startsWith('冰冰 ') || t.trim().startsWith('点歌 ') || t.trim().startsWith('TTS ') || t.trim().startsWith('朗读 ')) {
+                        if (t.trim().length == 0 || (!suffixFlag) || needwb == 0 || t.trim().startsWith('凌 ') || t.trim().startsWith('鸽 ') || t.trim().startsWith('小冰 ') || t.trim().startsWith('冰冰 ') || t.trim().startsWith('点歌 ') || t.trim().startsWith('TTS ') || t.trim().startsWith('朗读 ')) {
                             return originalContent;
                         } else if (wordCount === 0) {
                             return originalContent + '\n\n\n>  ' + getCurrentSuffixText();
