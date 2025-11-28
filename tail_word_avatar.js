@@ -632,7 +632,7 @@
                             return originalContent + wordMsg + wbMsg;
                         }
                     }(),
-        
+                    client: "小梦的魔法" + version_us
                 }),
                 beforeSend: function () {
                     $("#form button.red").attr("disabled", "disabled").css("opacity", "0.3")
