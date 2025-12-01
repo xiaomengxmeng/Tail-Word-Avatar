@@ -16,11 +16,42 @@
 
     // 版本信息
     const version = '1.2.4';
+    
+    // 好感度范围配置 - 用户可自行修改此范围
+    let favorRange = {
+        min: -100,
+        max: 100
+    };
+    
+    // 计算好感度相对百分比的辅助函数（基于范围）
+    function calculateFavorPercentage(favor) {
+        // 边界检查：确保范围有效
+        if (favorRange.min >= favorRange.max) {
+            console.warn('好感度范围配置无效：最小值必须小于最大值');
+            return 50; // 返回中间值作为默认值
+        }
+        
+        // 确保好感度在范围内
+        const clampedFavor = Math.max(favorRange.min, Math.min(favorRange.max, favor));
+        
+        // 使用(当前好感度-min)/(max-min)公式计算百分比
+        const range = favorRange.max - favorRange.min;
+        if (range === 0) return 50; // 防止除以零
+        
+        const percentage = ((clampedFavor - favorRange.min) / range) * 100;
+        
+        // 确保结果有效
+        if (isNaN(percentage) || !isFinite(percentage)) {
+            return 50;
+        }
+        
+        return Math.max(0, Math.min(100, percentage));
+    }
 
     // 好感度数据结构
     // - id: 鱼油唯一标识符
     // - name: 鱼油名称
-    // - favor: 好感度值(-100到100)
+    // - favor: 好感度值(根据favorRange配置的范围)
     // - note: 备注信息
     let fishFavorConfig = [];
 
@@ -59,29 +90,31 @@
             return date.toLocaleString('zh-CN');
         }
         
-        // 为好感度等级添加emoji
+        // 为好感度等级添加emoji（按5%挡位计算）
         function getLevelEmoji(favor) {
-            const clampedFavor = Math.max(-100, Math.min(100, favor));
-            if (clampedFavor >= 90) return '❤️';
-            if (clampedFavor >= 80) return '💕';
-            if (clampedFavor >= 70) return '💖';
-            if (clampedFavor >= 60) return '💗';
-            if (clampedFavor >= 50) return '💓';
-            if (clampedFavor >= 40) return '😊';
-            if (clampedFavor >= 30) return '🙂';
-            if (clampedFavor >= 20) return '😃';
-            if (clampedFavor >= 10) return '😐';
-            if (clampedFavor >= 0)  return '😶';
-            if (clampedFavor >= -10) return '😕';
-            if (clampedFavor >= -20) return '😟';
-            if (clampedFavor >= -30) return '😔';
-            if (clampedFavor >= -40) return '😐';
-            if (clampedFavor >= -50) return '😕';
-            if (clampedFavor >= -60) return '😟';
-            if (clampedFavor >= -70) return '😔';
-            if (clampedFavor >= -80) return '😢';
-            if (clampedFavor >= -90) return '😭';
-            return '💔';
+            const percentage = calculateFavorPercentage(favor);
+            
+            // 按5%的挡位返回对应的emoji
+            if (percentage >= 95) return '❤️';     // 95%-100%: 最深爱
+            if (percentage >= 90) return '💕';     // 90%-95%: 非常爱
+            if (percentage >= 85) return '💖';     // 85%-90%: 深爱
+            if (percentage >= 80) return '💗';     // 80%-85%: 很爱
+            if (percentage >= 75) return '💓';     // 75%-80%: 爱
+            if (percentage >= 70) return '😊';     // 70%-75%: 喜欢
+            if (percentage >= 65) return '🙂';     // 65%-70%: 很喜欢
+            if (percentage >= 60) return '😌';     // 60%-65%: 微笑
+            if (percentage >= 55) return '😐';     // 55%-60%: 略微笑
+            if (percentage >= 50) return '😑';     // 50%-55%: 中性
+            if (percentage >= 45) return '😶';     // 45%-50%: 无语
+            if (percentage >= 40) return '😕';     // 40%-45%: 疑惑
+            if (percentage >= 35) return '😟';     // 35%-40%: 担忧
+            if (percentage >= 30) return '😔';     // 30%-35%: 思考
+            if (percentage >= 25) return '😢';     // 25%-30%: 伤心
+            if (percentage >= 20) return '😔';     // 20%-25%: 失落
+            if (percentage >= 15) return '😰';     // 15%-20%: 惊恐
+            if (percentage >= 10) return '😨';     // 10%-15%: 恐惧
+            if (percentage >= 5)  return '😭';     // 5%-10%: 大哭
+            return '💔';                           // 0%-5%: 心碎
         }
 
         // 基础信息
@@ -104,7 +137,7 @@
             for (let i = recentNotes.length - 1; i >= 0; i--) {
                 const note = recentNotes[i];
                 if (note.favorChange) {
-                    currentFavor = Math.min(Math.max(0, currentFavor - note.favorChange), 100); // 确保好感度在0-100之间
+                    currentFavor = Math.min(Math.max(favorRange.min, currentFavor - note.favorChange), favorRange.max); // 确保好感度在配置范围内
                     favorHistory.unshift(currentFavor);
                 }
             }
@@ -700,7 +733,7 @@
 
         // 初始好感度输入
         const favorLabel = document.createElement('div');
-        favorLabel.textContent = '初始好感度 (-100到100)';
+        favorLabel.textContent = `初始好感度 (${favorRange.min}到${favorRange.max})`;
         favorLabel.style.marginBottom = '8px';
         favorLabel.style.fontWeight = '500';
         favorLabel.style.color = '#555';
@@ -708,8 +741,8 @@
 
         const favorInput = document.createElement('input');
         favorInput.type = 'number';
-        favorInput.min = '-100';
-        favorInput.max = '100';
+        favorInput.min = favorRange.min;
+        favorInput.max = favorRange.max;
         favorInput.value = '0';
         favorInput.style.cssText = `
             width: 100%;
@@ -731,9 +764,9 @@
         favorInput.addEventListener('blur', () => {
             favorInput.style.borderColor = '#d9d9d9';
             favorInput.style.boxShadow = 'none';
-            // 确保好感度值在-100到100之间
-              if (favorInput.value < -100) favorInput.value = -100;
-              if (favorInput.value > 100) favorInput.value = 100;
+            // 确保好感度值在配置范围内
+              if (favorInput.value < favorRange.min) favorInput.value = favorRange.min;
+              if (favorInput.value > favorRange.max) favorInput.value = favorRange.max;
         });
 
         addFishSection.appendChild(favorInput);
@@ -1127,32 +1160,31 @@
         makeDraggable(panel, titleBar);
     }
 
-    // 获取好感度等级的函数
+    // 获取好感度等级的函数（按5%挡位计算）
     function getFavorLevel(favor) {
-        // 确保好感度在-100到100之间
-        const clampedFavor = Math.max(-100, Math.min(100, favor));
+        const percentage = calculateFavorPercentage(favor);
         
-        // 10度一档的等级系统，全部使用四字词语（朋友关系递进）
-        if (clampedFavor >= 90) return '刎颈之交';  // 最高级别的朋友关系
-        if (clampedFavor >= 80) return '生死之交';  // 可以共生死的朋友
-        if (clampedFavor >= 70) return '莫逆之交';  // 非常要好的朋友
-        if (clampedFavor >= 60) return '金兰之交';  // 结拜兄弟般的友谊
-        if (clampedFavor >= 50) return '管鲍之交';  // 深厚的友谊
-        if (clampedFavor >= 40) return '八拜之交';  // 结拜的好友
-        if (clampedFavor >= 30) return '总角之交';  // 从小玩到大的朋友
-        if (clampedFavor >= 20) return '君子之交';  // 互相尊重的朋友
-        if (clampedFavor >= 10) return '同气相求';  // 志趣相投的朋友
-        if (clampedFavor >= 0) return '点头之交';   // 普通相识
-        if (clampedFavor >= -10) return '泛泛之交'; // 一般关系
-        if (clampedFavor >= -20) return '一面之交'; // 仅见过一次
-        if (clampedFavor >= -30) return '形同陌路'; // 像陌生人一样
-        if (clampedFavor >= -40) return '话不投机'; // 没有共同语言
-        if (clampedFavor >= -50) return '敬而远之'; // 保持距离
-        if (clampedFavor >= -60) return '视同路人'; // 当作陌生人
-        if (clampedFavor >= -70) return '若即若离'; // 关系疏远
-        if (clampedFavor >= -80) return '反目成仇'; // 变成仇人
-        if (clampedFavor >= -90) return '不共戴天'; // 非常敌对
-        return '势如水火';
+        // 5%一档的等级系统，全部使用四字词语（关系递进）
+        if (percentage >= 95) return '刎颈之交';  // 95%-100%: 最高级别的朋友关系
+        if (percentage >= 90) return '生死之交';  // 90%-95%: 可以共生死的朋友
+        if (percentage >= 85) return '莫逆之交';  // 85%-90%: 非常要好的朋友
+        if (percentage >= 80) return '金兰之交';  // 80%-85%: 结拜兄弟般的友谊
+        if (percentage >= 75) return '管鲍之交';  // 75%-80%: 深厚的友谊
+        if (percentage >= 70) return '八拜之交';  // 70%-75%: 结拜的好友
+        if (percentage >= 65) return '总角之交';  // 65%-70%: 从小玩到大的朋友
+        if (percentage >= 60) return '君子之交';  // 60%-65%: 互相尊重的朋友
+        if (percentage >= 55) return '同气相求';  // 55%-60%: 志趣相投的朋友
+        if (percentage >= 50) return '点头之交';  // 50%-55%: 普通相识
+        if (percentage >= 45) return '泛泛之交';  // 45%-50%: 一般关系
+        if (percentage >= 40) return '一面之交';  // 40%-45%: 仅见过一次
+        if (percentage >= 35) return '形同陌路';  // 35%-40%: 像陌生人一样
+        if (percentage >= 30) return '话不投机';  // 30%-35%: 没有共同语言
+        if (percentage >= 25) return '敬而远之';  // 25%-30%: 保持距离
+        if (percentage >= 20) return '视同路人';  // 20%-25%: 当作陌生人
+        if (percentage >= 15) return '若即若离';  // 15%-20%: 关系疏远
+        if (percentage >= 10) return '反目成仇';  // 10%-15%: 变成仇人
+        if (percentage >= 5) return '不共戴天';   // 5%-10%: 非常敌对
+        return '势如水火';                        // 0%-5%: 极度敌对
     }
 
     // 更新鱼油列表
@@ -1462,7 +1494,7 @@
                             }
                             
                             // 执行好感度增加
-                            fish.favor = Math.min(100, fish.favor + amount);
+                            fish.favor = Math.min(favorRange.max, fish.favor + amount);
                             fish.updatedAt = new Date(); // 更新时间戳
                             updateFavorDisplay(fishItem, fish);
                             saveFavorConfig();
@@ -1855,38 +1887,31 @@
         }
     }
 
-    // 根据好感度获取颜色 - 从-100到100每10分一档
+    // 根据好感度获取颜色 - 基于百分比计算（0%-100%）
     function getFavorColor(favor) {
-        // 负好感度区域（从深紫色到红色渐变）
-        if (favor <= -100) return '#3a1c71'; // 极负面 - 深紫色
-        if (favor <= -90) return '#553d9a'; // 极度负面 - 深紫色
-        if (favor <= -80) return '#7953a9'; // 非常负面 - 紫色
-        if (favor <= -70) return '#b37feb'; // 很负面 - 紫粉色
-        if (favor <= -60) return '#d76d77'; // 负面 - 玫红色
-        if (favor <= -50) return '#ffaf7b'; // 较负面 - 橙粉色
-        if (favor <= -40) return '#ff7675'; // 负面 - 红色
-        if (favor <= -30) return '#fd79a8'; // 轻微负面 - 粉红色
-        if (favor <= -20) return '#fdcb6e'; // 略负面 - 橙黄色
-        if (favor <= -10) return '#ffeaa7'; // 接近零 - 浅黄色
+        const percentage = calculateFavorPercentage(favor);
         
-        // 零区域
-        if (favor <= 0) return '#95a5a6'; // 零 - 灰色
+        // 低好感度区域（从深紫色到红色渐变）- 对应原-100到-10范围
+        if (percentage <= 10) return '#3a1c71'; // 0%-10%: 极负面 - 深紫色
+        if (percentage <= 20) return '#553d9a'; // 10%-20%: 极度负面 - 深紫色
+        if (percentage <= 30) return '#7953a9'; // 20%-30%: 非常负面 - 紫色
+        if (percentage <= 40) return '#b37feb'; // 30%-40%: 很负面 - 紫粉色
+        if (percentage <= 50) return '#d76d77'; // 40%-50%: 负面 - 玫红色
         
-        // 低好感度区域（黄色系）
-        if (favor <= 10) return '#ffeaa7'; // 略正面 - 浅黄色
-        if (favor <= 20) return '#fdcb6e'; // 轻微正面 - 橙黄色
-        if (favor <= 30) return '#fab1a0'; // 较正面 - 浅橙色
-        if (favor <= 40) return '#fd79a8'; // 正面 - 粉红色
+        // 中等好感度区域（从橙色到青色渐变）- 对应原-10到60范围
+        if (percentage <= 55) return '#ffaf7b'; // 50%-55%: 较负面 - 橙粉色
+        if (percentage <= 60) return '#ff7675'; // 55%-60%: 负面 - 红色
+        if (percentage <= 65) return '#fd79a8'; // 60%-65%: 轻微负面 - 粉红色
+        if (percentage <= 70) return '#fdcb6e'; // 65%-70%: 略负面 - 橙黄色
+        if (percentage <= 75) return '#ffeaa7'; // 70%-75%: 接近零 - 浅黄色
+        if (percentage <= 80) return '#95a5a6'; // 75%-80%: 零 - 灰色
+        if (percentage <= 85) return '#74b9ff'; // 80%-85%: 中等正面 - 浅蓝色
+        if (percentage <= 90) return '#55efc4'; // 85%-90%: 较正面 - 青色
         
-        // 中等好感度区域（绿色系）
-        if (favor <= 50) return '#74b9ff'; // 中等正面 - 浅蓝色
-        if (favor <= 60) return '#55efc4'; // 较正面 - 青色
-        if (favor <= 70) return '#00cec9'; // 很正面 - 亮青色
-        
-        // 高好感度区域（深绿色系）
-        if (favor <= 80) return '#00b894'; // 非常正面 - 深青色
-        if (favor <= 90) return '#2ecc71'; // 极度正面 - 绿色
-        if (favor <= 100) return '#00b894'; // 极正面 - 深绿色
+        // 高好感度区域（从亮青色到绿色渐变）- 对应原60到100范围
+        if (percentage <= 95) return '#00cec9'; // 90%-95%: 很正面 - 亮青色
+        if (percentage <= 98) return '#00b894'; // 95%-98%: 非常正面 - 深青色
+        if (percentage <= 100) return '#2ecc71'; // 98%-100%: 极度正面 - 绿色
         
         // 超出范围的默认值
         return '#52c41a'; // 超高好感度 - 亮绿色
@@ -1950,7 +1975,7 @@
 
         // 好感度输入
         const favorLabel = document.createElement('div');
-        favorLabel.textContent = '好感度 (-100到100)';
+        favorLabel.textContent = `好感度 (${favorRange.min}到${favorRange.max})`;
         favorLabel.style.marginBottom = '8px';
         favorLabel.style.fontWeight = '500';
         favorLabel.style.color = '#555';
@@ -1958,8 +1983,8 @@
 
         const favorInput = document.createElement('input');
         favorInput.type = 'number';
-        favorInput.min = '-100';
-        favorInput.max = '100';
+        favorInput.min = favorRange.min.toString();
+        favorInput.max = favorRange.max.toString();
         favorInput.value = fish.favor;
         favorInput.style.cssText = `
             width: 100%;
@@ -2043,7 +2068,7 @@
             
             // 记录好感度变化信息
             const favorBefore = fish.favor;
-            const newFavorValue = Math.max(-100, Math.min(100, newFavor));
+            const newFavorValue = Math.max(favorRange.min, Math.min(favorRange.max, newFavor));
             const favorChange = newFavorValue - favorBefore;
             
             // 如果有新的备注内容，添加到notes数组
@@ -2071,7 +2096,7 @@
 
             // 更新鱼油信息
             fish.name = newName;
-            fish.favor = Math.max(-100, Math.min(100, newFavor)); // 确保在-100到100之间
+            fish.favor = Math.max(favorRange.min, Math.min(favorRange.max, newFavor)); // 确保在配置范围内
             fish.updatedAt = new Date(); // 更新时间戳
             // 移除旧的note字段（如果存在）
             if ('note' in fish) {
@@ -2165,7 +2190,7 @@
 
                         // 验证鱼油数据结构
                         const isValid = importData.fishList.every(fish => 
-                            fish.name && typeof fish.favor === 'number' && fish.favor >= -100 && fish.favor <= 100
+                            fish.name && typeof fish.favor === 'number' && fish.favor >= favorRange.min && fish.favor <= favorRange.max
                         );
 
                         if (!isValid) {
