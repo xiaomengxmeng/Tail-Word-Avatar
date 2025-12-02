@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.13
+// @version      1.0.14
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -16,7 +16,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.13";
+    const version_us = "v1.0.14";
     // 按钮数据结构：{id, textContent, message, className , count}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
@@ -371,23 +371,100 @@ window.editButton = function(index) {
         document.body.appendChild(editDialog);
     }
     
+    // 冷却系统
+    function startCooldown(btn, seconds) {
+        const originalText = btn.textContent;
+        let remaining = seconds;
+        
+        // 添加冷却样式
+        btn.classList.add('cooldown');
+        
+        // 保存原始文本
+        btn.dataset.originalText = originalText;
+        
+        // 开始冷却
+        btn.textContent = `${originalText} (${remaining}s)`;
+        
+        const timer = setInterval(() => {
+            remaining--;
+            btn.textContent = `${originalText} (${remaining}s)`;
+            
+            if (remaining <= 0) {
+                clearInterval(timer);
+                // 恢复原始状态
+                btn.textContent = originalText;
+                btn.classList.remove('cooldown');
+                delete btn.dataset.originalText;
+            }
+        }, 1000);
+    }
+
+    // 按钮工厂 - 用于创建按钮
+    const buttonFactory = {
+        create: (config) => {
+            const btn = document.createElement('button');
+            btn.id = config.id;
+            btn.textContent = config.textContent;
+            btn.className = `cr-btn ${config.className}`;
+            btn.style.cssText = `
+                margin-right: 5px;
+                margin-bottom: 5px;
+                padding: 6px 12px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            `;
+            
+            btn.onclick = async () => {
+                try {
+                    await sendMsgApi(config.message);
+                    // 增加点击次数
+                    config.count++;
+                    saveButtonsConfig();
+                    // 更新按钮列表
+                    if (document.getElementById('buttons-list')) {
+                        updateButtonsList();
+                    }
+                    // 如果配置了冷却时间，则启动冷却
+                    if (config.cooldown) {
+                        startCooldown(btn, config.cooldown);
+                    }
+                } catch (err) {
+                    console.error('按钮点击失败:', err);
+                }
+            };
+            
+            return btn;
+        }
+    };
+
     // 发送消息的API函数
     function sendMsgApi(msg) {
-        var msgData = {
-            "content": msg,
-            "client": "Web/小梦的魔法" + version_us
-        };
-        $.ajax({
-            url: "https://fishpi.cn/chat-room/send",
-            type: "POST",
-            async: false,
-            data: JSON.stringify(msgData),
-            success: function (e) {
-                console.log('消息发送成功');
-            },
-            error: function (e) {
-                console.error('发送消息失败:', e);
-            }
+        return new Promise((resolve, reject) => {
+            var msgData = {
+                "content": msg,
+                "client": "Web/小梦的魔法" + version_us
+            };
+            $.ajax({
+                url: "https://fishpi.cn/chat-room/send",
+                type: "POST",
+                data: JSON.stringify(msgData),
+                dataType: "json",
+                contentType: "application/json",
+                success: (response) => {
+                    console.log('消息发送成功:', response);
+                    resolve(response);
+                },
+                error: (xhr, status, error) => {
+                    console.error('发送消息失败:', error);
+                    console.error('错误详情:', xhr.responseText);
+                    reject(new Error(`发送消息失败: ${error}`));
+                }
+            });
         });
     }
     
@@ -453,28 +530,49 @@ window.editButton = function(index) {
             
             // 创建每个按钮
             buttonsConfig.forEach(button => {
-                var btn = document.createElement('button');
-            btn.id = button.id;
-            btn.textContent = button.textContent;
-            btn.className = button.className || 'red';
-            btn.setAttribute('style', 'margin-right:5px; margin-bottom:5px; padding:4px 8px; border-radius: 4px;');
-            btn.onclick = function() {
-                sendMsgApi(button.message);
-                // 增加点击次数
-                button.count++;
-                saveButtonsConfig();
-            };
-            buttonContainer.appendChild(btn);
+                const btn = buttonFactory.create(button);
+                buttonContainer.appendChild(btn);
             });
             
             // 添加管理按钮
             var manageButton = document.createElement('button');
             manageButton.id = 'button-manager-button';
             manageButton.textContent = '管理';
-            manageButton.className = 'blue';
-            manageButton.setAttribute('style', 'margin-right:5px; margin-bottom:5px; padding:4px 8px;');
+            manageButton.className = 'cr-btn blue';
+            manageButton.style.cssText = `
+                margin-right: 5px;
+                margin-bottom: 5px;
+                padding: 6px 12px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            `;
             manageButton.onclick = openButtonManagerPanel;
             buttonContainer.appendChild(manageButton);
+            
+            // 添加清除私信按钮
+            var clearMsgButton = document.createElement('button');
+            clearMsgButton.id = 'clear-messages-button';
+            clearMsgButton.textContent = '清空私信';
+            clearMsgButton.className = 'cr-btn btn-blue';
+            clearMsgButton.style.cssText = `
+                margin-right: 5px;
+                margin-bottom: 5px;
+                padding: 6px 12px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            `;
+            clearMsgButton.onclick = clearPrivateMessages;
+            buttonContainer.appendChild(clearMsgButton);
             
         } catch (e) {
             console.error('创建按钮失败:', e);
@@ -485,6 +583,24 @@ window.editButton = function(index) {
     // 生成唯一ID
     function generateUniqueId() {
         return 'custom-button-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+    }
+
+    // 清除私信功能
+    function clearPrivateMessages() {
+        return Promise.all([
+            fetchPrivate("/chat/mark-all-as-read"),
+            fetchPrivate("/notifications/all-read")
+        ]).then(() => {
+            showNotification('私信已清空！', 'success');
+        }).catch(err => {
+            console.error('清空私信失败:', err);
+            showNotification('清空私信失败，请稍后重试', 'error');
+        });
+    }
+
+    // 私信接口
+    function fetchPrivate(endpoint) {
+        return fetch(`${location.origin}${endpoint}?apiKey=${Label.node.apiKey}`);
     }
     
     // 导入按钮配置
@@ -597,16 +713,17 @@ window.editButton = function(index) {
             transform: translate(-50%, -50%);
             background: #ffffff;
             border: 1px solid #e8e8e8;
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 0;
             z-index: 9999;
-            width: 520px;
-            max-height: 75vh;
+            width: 550px;
+            max-height: 80vh;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            transition: box-shadow 0.3s ease;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         `;
         
         // 添加面板悬停效果
@@ -1070,22 +1187,33 @@ window.editButton = function(index) {
     }
     
     // 显示通知
-    function showNotification(message) {
+    function showNotification(message, type = 'success') {
         const notification = document.createElement('div');
         notification.textContent = message;
+        
+        // 根据类型设置不同的背景色
+        let bgColor = '#52c41a';
+        if (type === 'error') {
+            bgColor = '#f5222d';
+        } else if (type === 'warning') {
+            bgColor = '#faad14';
+        }
+        
         notification.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            background: #52c41a;
+            background: ${bgColor};
             color: white;
-            padding: 10px 15px;
-            border-radius: 4px;
+            padding: 12px 20px;
+            border-radius: 8px;
             z-index: 10001;
             font-size: 14px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             opacity: 0;
-            transition: opacity 0.3s;
+            transform: translateY(-20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         `;
         
         document.body.appendChild(notification);
@@ -1093,11 +1221,13 @@ window.editButton = function(index) {
         // 显示通知
         setTimeout(() => {
             notification.style.opacity = '1';
+            notification.style.transform = 'translateY(0)';
         }, 10);
         
         // 3秒后隐藏通知
         setTimeout(() => {
             notification.style.opacity = '0';
+            notification.style.transform = 'translateY(-20px)';
             setTimeout(() => {
                 document.body.removeChild(notification);
             }, 300);
@@ -1139,28 +1269,64 @@ window.editButton = function(index) {
 })();
 // 添加按钮颜色样式
 GM_addStyle(`
+  /* 按钮基础样式 */
+  .cr-btn {
+    position: relative !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 8px 16px !important;
+    color: white !important;
+    font-size: 14px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    font-weight: 500 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .cr-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  /* 冷却中的按钮样式 */
+  .cr-btn.cooldown,
+  .sub-btn.cooldown {
+    opacity: 0.7 !important;
+    filter: grayscale(0.5) !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+  }
+  
+  /* 按钮颜色样式 - 渐变背景 */
   .red {
-    color: #f5222d;
-    border: 1px solid #d9d9d9;
+    background: linear-gradient(135deg, #f5222d 0%, #ff4d4f 100%) !important;
   }
   
   .blue {
-    color: #096dd9;
-    border: 1px solid #d9d9d9;
+    background: linear-gradient(135deg, #096dd9 0%, #1890ff 100%) !important;
   }
   
   .green {
-    color: #389e0d;
-    border: 1px solid #d9d9d9;
+    background: linear-gradient(135deg, #389e0d 0%, #52c41a 100%) !important;
   }
   
   .gray {
-    color: #595959;
-    border: 1px solid #d9d9d9;
+    background: linear-gradient(135deg, #595959 0%, #8c8c8c 100%) !important;
   }
   
   .orange {
-    color: #d46b08;
-    border: 1px solid #d9d9d9;
+    background: linear-gradient(135deg, #d46b08 0%, #fa8c16 100%) !important;
+  }
+  
+  .btn-blue {
+    background: linear-gradient(135deg, #4dabf7 0%, #339af0 100%) !important;
+  }
+  
+  .btn-red {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%) !important;
+  }
+  
+  .btn-warn {
+    background: linear-gradient(135deg, #ff922b 0%, #ff7676 100%) !important;
   }
 `);
