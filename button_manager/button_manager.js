@@ -405,37 +405,14 @@ window.editButton = function(index) {
             const btn = document.createElement('button');
             btn.id = config.id;
             btn.textContent = config.textContent;
-            btn.className = `cr-btn ${config.className}`;
-            btn.style.cssText = `
-                margin-right: 5px;
-                margin-bottom: 5px;
-                padding: 6px 12px;
-                border: none;
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 500;
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            `;
+            btn.className = config.className || 'red';
+            btn.setAttribute('style', 'margin-right:5px; margin-bottom:5px; padding:4px 8px; border-radius: 4px;');
             
-            btn.onclick = async () => {
-                try {
-                    await sendMsgApi(config.message);
-                    // 增加点击次数
-                    config.count++;
-                    saveButtonsConfig();
-                    // 更新按钮列表
-                    if (document.getElementById('buttons-list')) {
-                        updateButtonsList();
-                    }
-                    // 如果配置了冷却时间，则启动冷却
-                    if (config.cooldown) {
-                        startCooldown(btn, config.cooldown);
-                    }
-                } catch (err) {
-                    console.error('按钮点击失败:', err);
-                }
+            btn.onclick = function() {
+                sendMsgApi(config.message);
+                // 增加点击次数
+                config.count++;
+                saveButtonsConfig();
             };
             
             return btn;
@@ -538,19 +515,8 @@ window.editButton = function(index) {
             var manageButton = document.createElement('button');
             manageButton.id = 'button-manager-button';
             manageButton.textContent = '管理';
-            manageButton.className = 'cr-btn blue';
-            manageButton.style.cssText = `
-                margin-right: 5px;
-                margin-bottom: 5px;
-                padding: 6px 12px;
-                border: none;
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 500;
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            `;
+            manageButton.className = 'blue';
+            manageButton.setAttribute('style', 'margin-right:5px; margin-bottom:5px; padding:4px 8px;');
             manageButton.onclick = openButtonManagerPanel;
             buttonContainer.appendChild(manageButton);
             
@@ -558,19 +524,8 @@ window.editButton = function(index) {
             var clearMsgButton = document.createElement('button');
             clearMsgButton.id = 'clear-messages-button';
             clearMsgButton.textContent = '清空私信';
-            clearMsgButton.className = 'cr-btn btn-blue';
-            clearMsgButton.style.cssText = `
-                margin-right: 5px;
-                margin-bottom: 5px;
-                padding: 6px 12px;
-                border: none;
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 500;
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            `;
+            clearMsgButton.className = 'blue';
+            clearMsgButton.setAttribute('style', 'margin-right:5px; margin-bottom:5px; padding:4px 8px; border-radius: 4px;');
             clearMsgButton.onclick = clearPrivateMessages;
             buttonContainer.appendChild(clearMsgButton);
             
@@ -1269,64 +1224,28 @@ window.editButton = function(index) {
 })();
 // 添加按钮颜色样式
 GM_addStyle(`
-  /* 按钮基础样式 */
-  .cr-btn {
-    position: relative !important;
-    border: none !important;
-    border-radius: 6px !important;
-    padding: 8px 16px !important;
-    color: white !important;
-    font-size: 14px !important;
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
-    font-weight: 500 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-  }
-  
-  .cr-btn:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-  }
-  
-  /* 冷却中的按钮样式 */
-  .cr-btn.cooldown,
-  .sub-btn.cooldown {
-    opacity: 0.7 !important;
-    filter: grayscale(0.5) !important;
-    cursor: not-allowed !important;
-    pointer-events: none !important;
-  }
-  
-  /* 按钮颜色样式 - 渐变背景 */
   .red {
-    background: linear-gradient(135deg, #f5222d 0%, #ff4d4f 100%) !important;
+    color: #f5222d;
+    border: 1px solid #d9d9d9;
   }
   
   .blue {
-    background: linear-gradient(135deg, #096dd9 0%, #1890ff 100%) !important;
+    color: #096dd9;
+    border: 1px solid #d9d9d9;
   }
   
   .green {
-    background: linear-gradient(135deg, #389e0d 0%, #52c41a 100%) !important;
+    color: #389e0d;
+    border: 1px solid #d9d9d9;
   }
   
   .gray {
-    background: linear-gradient(135deg, #595959 0%, #8c8c8c 100%) !important;
+    color: #595959;
+    border: 1px solid #d9d9d9;
   }
   
   .orange {
-    background: linear-gradient(135deg, #d46b08 0%, #fa8c16 100%) !important;
-  }
-  
-  .btn-blue {
-    background: linear-gradient(135deg, #4dabf7 0%, #339af0 100%) !important;
-  }
-  
-  .btn-red {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%) !important;
-  }
-  
-  .btn-warn {
-    background: linear-gradient(135deg, #ff922b 0%, #ff7676 100%) !important;
+    color: #d46b08;
+    border: 1px solid #d9d9d9;
   }
 `);
