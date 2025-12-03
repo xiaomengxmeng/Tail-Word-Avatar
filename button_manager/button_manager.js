@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.14
+// @version      1.0.15
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -16,13 +16,13 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.14";
-    // 按钮数据结构：{id, textContent, message, className , count}
+    const version_us = "v1.0.15";
+    // 按钮数据结构：{id, textContent, message, className , count, hidden}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
     const DEFAULT_BUTTONS = [
-        { id: 'default-bingbing', textContent: '打劫', message: '冰冰 去打劫', className: 'red', count: 0 },
-        { id: 'default-ge', textContent: '鸽', message: '鸽 行行好吧', className: 'red', count: 0 }
+        { id: 'default-bingbing', textContent: '打劫', message: '冰冰 去打劫', className: 'red', count: 0, hidden: false },
+        { id: 'default-ge', textContent: '鸽', message: '鸽 行行好吧', className: 'red', count: 0, hidden: false }
     ];
     
     // 颜色选项 - 全局常量
@@ -113,6 +113,14 @@
             buttonCount.style.marginBottom = '4px';
             buttonCount.textContent = '点击次数: ' + button.count;
             buttonInfo.appendChild(buttonCount);
+            
+            // 隐藏状态显示
+            const buttonStatus = document.createElement('div');
+            buttonStatus.style.fontSize = '12px';
+            buttonStatus.style.color = button.hidden ? '#ff4d4f' : '#52c41a';
+            buttonStatus.style.marginBottom = '4px';
+            buttonStatus.textContent = '状态: ' + (button.hidden ? '隐藏' : '显示');
+            buttonInfo.appendChild(buttonStatus);
             
             buttonInfo.appendChild(buttonMsg);
             
@@ -294,6 +302,21 @@ window.editButton = function(index) {
         colorSelectDiv.appendChild(colorSelect);
         editDialog.appendChild(colorSelectDiv);
         
+        // 隐藏选项
+        const hiddenSelectDiv = document.createElement('div');
+        hiddenSelectDiv.style.marginBottom = '15px';
+        const hiddenLabel = document.createElement('label');
+        hiddenLabel.textContent = '隐藏按钮: ';
+        hiddenLabel.style.display = 'inline-block';
+        hiddenLabel.style.width = '80px';
+        const hiddenCheckbox = document.createElement('input');
+        hiddenCheckbox.type = 'checkbox';
+        hiddenCheckbox.checked = button.hidden || false;
+        hiddenCheckbox.style.marginTop = '5px';
+        hiddenSelectDiv.appendChild(hiddenLabel);
+        hiddenSelectDiv.appendChild(hiddenCheckbox);
+        editDialog.appendChild(hiddenSelectDiv);
+        
         // 按钮容器
         const buttonsDiv = document.createElement('div');
         buttonsDiv.style.display = 'flex';
@@ -333,6 +356,7 @@ window.editButton = function(index) {
         saveBtn.onclick = function() {
             const buttonText = textInput.value.trim();
             const buttonMsg = msgInput.value.trim();
+            const isHidden = hiddenCheckbox.checked;
             
             if (!buttonText || !buttonMsg) {
                 alert('请填写按钮文本和触发消息');
@@ -345,7 +369,8 @@ window.editButton = function(index) {
                 textContent: buttonText,
                 message: buttonMsg,
                 className: colorSelect.value,
-                count: button.count || 0 // 保留原始点击次数，如果不存在则设为0
+                count: button.count || 0, // 保留原始点击次数，如果不存在则设为0
+                hidden: isHidden
             };
             
             saveButtonsConfig();
@@ -451,10 +476,13 @@ window.editButton = function(index) {
             const savedConfig = localStorage.getItem(STORAGE_KEY);
             if (savedConfig) {
                 buttonsConfig = JSON.parse(savedConfig);
-                // 确保每个按钮都有count属性
+                // 确保每个按钮都有count和hidden属性
                 buttonsConfig.forEach(button => {
                     if (!button.hasOwnProperty('count')) {
                         button.count = 0;
+                    }
+                    if (!button.hasOwnProperty('hidden')) {
+                        button.hidden = false;
                     }
                 });
                 console.log('已加载保存的按钮配置:', buttonsConfig);
@@ -505,10 +533,12 @@ window.editButton = function(index) {
                 buttonContainer.innerHTML = '';
             }
             
-            // 创建每个按钮
+            // 创建每个按钮（仅显示未隐藏的按钮）
             buttonsConfig.forEach(button => {
-                const btn = buttonFactory.create(button);
-                buttonContainer.appendChild(btn);
+                if (!button.hidden) {
+                    const btn = buttonFactory.create(button);
+                    buttonContainer.appendChild(btn);
+                }
             });
             
             // 添加管理按钮
@@ -592,10 +622,13 @@ window.editButton = function(index) {
                         // 更新按钮配置
                         buttonsConfig = importData.buttons;
                         
-                        // 确保每个按钮都有count属性
+                        // 确保每个按钮都有count和hidden属性
                         buttonsConfig.forEach(button => {
                             if (!button.hasOwnProperty('count')) {
                                 button.count = 0;
+                            }
+                            if (!button.hasOwnProperty('hidden')) {
+                                button.hidden = false;
                             }
                         });
                         
@@ -895,6 +928,35 @@ window.editButton = function(index) {
         
         addButtonSection.appendChild(colorSelect);
         
+        // 隐藏选项
+        const hiddenLabel = document.createElement('div');
+        hiddenLabel.style.cssText = `
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        `;
+        
+        const hiddenCheckbox = document.createElement('input');
+        hiddenCheckbox.type = 'checkbox';
+        hiddenCheckbox.id = 'hidden-checkbox';
+        hiddenCheckbox.style.cssText = `
+            margin-right: 10px;
+            cursor: pointer;
+        `;
+        
+        const hiddenText = document.createElement('span');
+        hiddenText.textContent = '隐藏此按钮';
+        hiddenText.style.cssText = `
+            font-size: 14px;
+            color: #555;
+            cursor: pointer;
+        `;
+        
+        hiddenLabel.appendChild(hiddenCheckbox);
+        hiddenLabel.appendChild(hiddenText);
+        addButtonSection.appendChild(hiddenLabel);
+        
         // 添加按钮
         const addBtn = document.createElement('button');
         addBtn.textContent = '添加按钮';
@@ -925,6 +987,7 @@ window.editButton = function(index) {
         addBtn.addEventListener('click', function() {
             const buttonText = textInput.value.trim();
             const buttonMsg = msgInput.value.trim();
+            const isHidden = hiddenCheckbox.checked;
             
             if (!buttonText || !buttonMsg) {
                 showNotification('请填写按钮文本和触发消息', 'error');
@@ -937,7 +1000,8 @@ window.editButton = function(index) {
                 textContent: buttonText,
                 message: buttonMsg,
                 className: colorSelect.value,
-                count: 0
+                count: 0,
+                hidden: isHidden
             };
             
             // 添加到配置并保存
@@ -953,6 +1017,7 @@ window.editButton = function(index) {
             // 清空输入框
             textInput.value = '';
             msgInput.value = '';
+            hiddenCheckbox.checked = false;
             
             // 显示成功提示
             showNotification('按钮添加成功！', 'success');
