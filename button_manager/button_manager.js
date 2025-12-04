@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.15
+// @version      1.0.16
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -16,7 +16,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.15";
+    const version_us = "v1.0.16";
     // 按钮数据结构：{id, textContent, message, className , count, hidden}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
@@ -264,15 +264,17 @@ window.editButton = function(index) {
         // 按钮消息输入
         const msgInputDiv = document.createElement('div');
         msgInputDiv.style.marginBottom = '10px';
+        msgInputDiv.style.display = 'flex';
+        msgInputDiv.style.flexDirection = 'column';
         const msgLabel = document.createElement('label');
         msgLabel.textContent = '触发消息: ';
-        msgLabel.style.display = 'inline-block';
-        msgLabel.style.width = '80px';
-        const msgInput = document.createElement('input');
-        msgInput.type = 'text';
+        msgLabel.style.marginBottom = '5px';
+        const msgInput = document.createElement('textarea');
         msgInput.value = button.message;
-        msgInput.style.width = 'calc(100% - 90px)';
+        msgInput.rows = 4;
+        msgInput.style.width = '100%';
         msgInput.style.padding = '5px';
+        msgInput.style.resize = 'vertical';
         msgInputDiv.appendChild(msgLabel);
         msgInputDiv.appendChild(msgInput);
         editDialog.appendChild(msgInputDiv);
@@ -434,17 +436,29 @@ window.editButton = function(index) {
             btn.setAttribute('style', 'margin-right:5px; margin-bottom:5px; padding:4px 8px; border-radius: 4px;');
             
             btn.onclick = function() {
-                sendMsgApi(config.message);
-                // 增加点击次数
-                config.count++;
-                saveButtonsConfig();
+                // 将消息按换行符分割成多条消息，过滤掉空行
+                const messages = config.message.split('\n').filter(msg => msg.trim() !== '');
+                
+                if (messages.length > 0) {
+                    // 使用sendMessagesApi逐条发送消息
+                    sendMessagesApi(messages)
+                        .then(() => {
+                            // 增加点击次数
+                            config.count++;
+                            saveButtonsConfig();
+                        })
+                        .catch(error => {
+                            console.error('发送消息失败:', error);
+                            showNotification('发送消息失败，请稍后重试', 'error');
+                        });
+                }
             };
             
             return btn;
         }
     };
 
-    // 发送消息的API函数
+    // 发送单条消息的API函数
     function sendMsgApi(msg) {
         return new Promise((resolve, reject) => {
             var msgData = {
@@ -467,6 +481,31 @@ window.editButton = function(index) {
                     reject(new Error(`发送消息失败: ${error}`));
                 }
             });
+        });
+    }
+    
+    // 发送多条消息的API函数，支持逐条发送
+    function sendMessagesApi(messages, delay = 1000) {
+        return new Promise((resolve, reject) => {
+            let index = 0;
+            
+            function sendNext() {
+                if (index >= messages.length) {
+                    resolve();
+                    return;
+                }
+                
+                const message = messages[index];
+                index++;
+                
+                sendMsgApi(message)
+                    .then(() => {
+                        setTimeout(sendNext, delay);
+                    })
+                    .catch(reject);
+            }
+            
+            sendNext();
         });
     }
     
@@ -859,9 +898,9 @@ window.editButton = function(index) {
         msgLabel.style.color = '#555';
         addButtonSection.appendChild(msgLabel);
         
-        const msgInput = document.createElement('input');
-        msgInput.type = 'text';
-        msgInput.placeholder = '点击按钮发送的消息';
+        const msgInput = document.createElement('textarea');
+        msgInput.placeholder = '点击按钮发送的消息（多行消息请用换行分隔）';
+        msgInput.rows = 4;
         msgInput.style.cssText = `
             width: 100%;
             padding: 10px 12px;
@@ -870,6 +909,7 @@ window.editButton = function(index) {
             border-radius: 6px;
             box-sizing: border-box;
             font-size: 14px;
+            resize: vertical;
             transition: all 0.3s ease;
             outline: none;
         `;
