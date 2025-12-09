@@ -1552,6 +1552,9 @@ window.editButton = function(index) {
             '人生得意须尽欢，莫使金樽空对月。'
         ];
 
+        // 获取当前自定义状态
+        let isCustom = localStorage['xwb_is_custom_suffix'] === 'true';
+
         // 添加预设选项
         suffixOptions.forEach((option, index) => {
             const opt = document.createElement('option');
@@ -1562,9 +1565,6 @@ window.editButton = function(index) {
             }
             suffixSelect.appendChild(opt);
         });
-
-        // 获取当前自定义状态
-        let isCustom = localStorage['xwb_is_custom_suffix'] === 'true';
 
         // 添加自定义选项
         const customOpt = document.createElement('option');

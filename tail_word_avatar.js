@@ -431,6 +431,9 @@
 
     // 打开小尾巴设置面板
     function openSuffixSettingsPanel() {
+        // 获取当前自定义状态
+        let isCustom = window.localStorage['xwb_is_custom_suffix'] === 'true';
+        
         // 创建设置面板容器
         const panel = document.createElement('div');
         panel.style.cssText = `
@@ -607,8 +610,12 @@
                 }
                 // 更新预览
                 previewContent.textContent = getCurrentSuffixText();
+                // 隐藏自定义输入框
+                customSuffixDiv.style.display = 'none';
             } else if (selectedValue === 'custom') {
-                showCustomSuffixInput();
+                // 显示自定义输入框
+                customSuffixDiv.style.display = 'block';
+                customSuffixTextarea.focus();
             }
         };
         suffixSelectDiv.appendChild(suffixSelectLabel);
@@ -711,15 +718,6 @@
 
         // 添加到页面
         document.body.appendChild(panel);
-
-        // 获取当前自定义状态
-        let isCustom = window.localStorage['xwb_is_custom_suffix'] === 'true';
-
-        // 显示自定义小尾巴输入框的函数
-        function showCustomSuffixInput() {
-            customSuffixDiv.style.display = 'block';
-            customSuffixTextarea.focus();
-        }
     };
 
     // 发送消息API函数
