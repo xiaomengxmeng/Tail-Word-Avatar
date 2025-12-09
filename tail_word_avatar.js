@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name         鱼派单词头像功能集
+
 // @namespace    http://tampermonkey.net/
 // @version      1.0.5
 // @description  整合单词功能和头像生成功能的精简版脚本   try to thank APTX-4869!
@@ -25,6 +26,709 @@
 
     // 头像生成功能开关
     var avatarGenFlag = window.localStorage['avatar_gen_flag'] ? JSON.parse(window.localStorage['avatar_gen_flag']) : false;
+
+    // 设置面板状态
+    let settingsPanelVisible = false;
+
+    // 创建设置面板
+    function createSettingsPanel() {
+        // 检查是否已存在面板
+        const existingPanel = document.getElementById('tail-word-settings-panel');
+        if (existingPanel) {
+            return existingPanel;
+        }
+
+        // 创建面板容器
+        const panel = document.createElement('div');
+        panel.id = 'tail-word-settings-panel';
+        panel.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 16px;
+            padding: 0;
+            z-index: 10000;
+            width: 550px;
+            max-height: 80vh;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        `;
+
+        // 创建可拖动的标题栏
+        const titleBar = document.createElement('div');
+        titleBar.style.cssText = `
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px 12px 0 0;
+            cursor: move;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        `;
+
+        // 面板标题
+        const title = document.createElement('h3');
+        title.textContent = '小尾巴和单词头像设置';
+        title.style.margin = '0';
+        title.style.fontSize = '18px';
+        title.style.fontWeight = '600';
+        titleBar.appendChild(title);
+
+        // 标题栏关闭按钮
+        const titleCloseBtn = document.createElement('button');
+        titleCloseBtn.innerHTML = '×';
+        titleCloseBtn.style.cssText = `
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease;
+        `;
+
+        titleCloseBtn.onclick = function() {
+            hideSettingsPanel();
+        };
+
+        titleCloseBtn.addEventListener('mouseenter', () => {
+            titleCloseBtn.style.background = 'rgba(255, 255, 255, 0.3)';
+        });
+
+        titleCloseBtn.addEventListener('mouseleave', () => {
+            titleCloseBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+        });
+
+        titleBar.appendChild(titleCloseBtn);
+        panel.appendChild(titleBar);
+
+        // 创建内容容器
+        const contentContainer = document.createElement('div');
+        contentContainer.style.cssText = `
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        `;
+        panel.appendChild(contentContainer);
+
+        // 添加小尾巴设置区域
+        const suffixSection = document.createElement('div');
+        suffixSection.style.cssText = `
+            background: #fafafa;
+            border: 2px dashed #e1e5e9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        `;
+
+        suffixSection.addEventListener('mouseenter', () => {
+            suffixSection.style.borderColor = '#667eea';
+            suffixSection.style.background = '#f0f2ff';
+        });
+
+        suffixSection.addEventListener('mouseleave', () => {
+            suffixSection.style.borderColor = '#e1e5e9';
+            suffixSection.style.background = '#fafafa';
+        });
+
+        const suffixTitle = document.createElement('h4');
+        suffixTitle.textContent = '小尾巴设置';
+        suffixTitle.style.marginTop = '0';
+        suffixTitle.style.marginBottom = '20px';
+        suffixTitle.style.color = '#333';
+        suffixTitle.style.fontSize = '16px';
+        suffixSection.appendChild(suffixTitle);
+
+        // 小尾巴开关
+        const suffixToggleDiv = document.createElement('div');
+        suffixToggleDiv.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        `;
+        
+        const suffixToggleLabel = document.createElement('label');
+        suffixToggleLabel.textContent = '启用小尾巴';
+        suffixToggleLabel.style.fontWeight = '500';
+        suffixToggleLabel.style.color = '#555';
+        
+        const suffixToggle = document.createElement('input');
+        suffixToggle.type = 'checkbox';
+        suffixToggle.checked = suffixFlag;
+        suffixToggle.id = 'suffix-toggle';
+        suffixToggle.style.cssText = `
+            width: 40px;
+            height: 20px;
+            cursor: pointer;
+        `;
+        
+        suffixToggleDiv.appendChild(suffixToggleLabel);
+        suffixToggleDiv.appendChild(suffixToggle);
+        suffixSection.appendChild(suffixToggleDiv);
+
+        // 小尾巴预设选择
+        const presetTitle = document.createElement('div');
+        presetTitle.textContent = '预设小尾巴';
+        presetTitle.style.marginBottom = '10px';
+        presetTitle.style.fontWeight = '500';
+        presetTitle.style.color = '#555';
+        suffixSection.appendChild(presetTitle);
+        
+        const presetSelect = document.createElement('select');
+        presetSelect.id = 'suffix-preset-select';
+        presetSelect.style.cssText = `
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 20px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+        `;
+        
+        suffixOptions.forEach((option, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.textContent = option;
+            presetSelect.appendChild(opt);
+        });
+        
+        // 设置当前选中的预设
+        const currentIndex = getCurrentSuffixIndex();
+        const isCustom = window.localStorage['xwb_is_custom_suffix'] === 'true';
+        if (!isCustom) {
+            presetSelect.value = currentIndex;
+        }
+        
+        suffixSection.appendChild(presetSelect);
+        
+        // 自定义小尾巴输入
+        const customTitle = document.createElement('div');
+        customTitle.textContent = '自定义小尾巴';
+        customTitle.style.marginBottom = '10px';
+        customTitle.style.fontWeight = '500';
+        customTitle.style.color = '#555';
+        suffixSection.appendChild(customTitle);
+        
+        const customInput = document.createElement('textarea');
+        customInput.id = 'custom-suffix-input';
+        customInput.placeholder = '请输入自定义小尾巴...';
+        customInput.rows = 3;
+        customInput.value = window.localStorage['xwb_custom_suffix'] || '';
+        customInput.style.cssText = `
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 20px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+            resize: vertical;
+            transition: all 0.3s ease;
+            outline: none;
+        `;
+        suffixSection.appendChild(customInput);
+        
+        // 自定义开关
+        const customToggleDiv = document.createElement('div');
+        customToggleDiv.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        `;
+        
+        const customToggleLabel = document.createElement('label');
+        customToggleLabel.textContent = '使用自定义小尾巴';
+        customToggleLabel.style.fontWeight = '500';
+        customToggleLabel.style.color = '#555';
+        
+        const customToggle = document.createElement('input');
+        customToggle.type = 'checkbox';
+        customToggle.checked = isCustom;
+        customToggle.id = 'custom-suffix-toggle';
+        customToggle.style.cssText = `
+            width: 40px;
+            height: 20px;
+            cursor: pointer;
+        `;
+        
+        customToggleDiv.appendChild(customToggleLabel);
+        customToggleDiv.appendChild(customToggle);
+        suffixSection.appendChild(customToggleDiv);
+        
+        // 当前预览
+        const previewTitle = document.createElement('div');
+        previewTitle.textContent = '当前预览';
+        previewTitle.style.marginBottom = '10px';
+        previewTitle.style.fontWeight = '500';
+        previewTitle.style.color = '#555';
+        suffixSection.appendChild(previewTitle);
+        
+        const previewDiv = document.createElement('div');
+        previewDiv.id = 'suffix-preview';
+        previewDiv.style.cssText = `
+            background: #f0f2ff;
+            border: 1px solid #667eea;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-style: italic;
+            color: #333;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        `;
+        previewDiv.textContent = getCurrentSuffixText();
+        suffixSection.appendChild(previewDiv);
+        
+        contentContainer.appendChild(suffixSection);
+
+        // 添加单词设置区域
+        const wordSection = document.createElement('div');
+        wordSection.style.cssText = `
+            background: #fafafa;
+            border: 2px dashed #e1e5e9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        `;
+
+        wordSection.addEventListener('mouseenter', () => {
+            wordSection.style.borderColor = '#667eea';
+            wordSection.style.background = '#f0f2ff';
+        });
+
+        wordSection.addEventListener('mouseleave', () => {
+            wordSection.style.borderColor = '#e1e5e9';
+            wordSection.style.background = '#fafafa';
+        });
+
+        const wordTitle = document.createElement('h4');
+        wordTitle.textContent = '单词设置';
+        wordTitle.style.marginTop = '0';
+        wordTitle.style.marginBottom = '20px';
+        wordTitle.style.color = '#333';
+        wordTitle.style.fontSize = '16px';
+        wordSection.appendChild(wordTitle);
+
+        // 小尾巴单词数量
+        const tailWordCountDiv = document.createElement('div');
+        tailWordCountDiv.style.marginBottom = '20px';
+        
+        const tailWordCountLabel = document.createElement('label');
+        tailWordCountLabel.textContent = '小尾巴单词数量（0-20）';
+        tailWordCountLabel.style.display = 'block';
+        tailWordCountLabel.style.marginBottom = '8px';
+        tailWordCountLabel.style.fontWeight = '500';
+        tailWordCountLabel.style.color = '#555';
+        tailWordCountDiv.appendChild(tailWordCountLabel);
+        
+        const tailWordCountInput = document.createElement('input');
+        tailWordCountInput.type = 'number';
+        tailWordCountInput.id = 'tail-word-count';
+        tailWordCountInput.value = wordCount;
+        tailWordCountInput.min = '0';
+        tailWordCountInput.max = '20';
+        tailWordCountInput.style.cssText = `
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            outline: none;
+        `;
+        tailWordCountDiv.appendChild(tailWordCountInput);
+        wordSection.appendChild(tailWordCountDiv);
+
+        // 左侧显示单词数量
+        const sideWordCountDiv = document.createElement('div');
+        sideWordCountDiv.style.marginBottom = '20px';
+        
+        const sideWordCountLabel = document.createElement('label');
+        sideWordCountLabel.textContent = '左侧显示单词数量（1-20）';
+        sideWordCountLabel.style.display = 'block';
+        sideWordCountLabel.style.marginBottom = '8px';
+        sideWordCountLabel.style.fontWeight = '500';
+        sideWordCountLabel.style.color = '#555';
+        sideWordCountDiv.appendChild(sideWordCountLabel);
+        
+        const sideWordCountInput = document.createElement('input');
+        sideWordCountInput.type = 'number';
+        sideWordCountInput.id = 'side-word-count';
+        sideWordCountInput.value = sideWordCount;
+        sideWordCountInput.min = '1';
+        sideWordCountInput.max = '20';
+        sideWordCountInput.style.cssText = `
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            outline: none;
+        `;
+        sideWordCountDiv.appendChild(sideWordCountInput);
+        wordSection.appendChild(sideWordCountDiv);
+        
+        // 单词面板风格
+        const styleTitle = document.createElement('div');
+        styleTitle.textContent = '单词面板风格';
+        styleTitle.style.marginBottom = '10px';
+        styleTitle.style.fontWeight = '500';
+        styleTitle.style.color = '#555';
+        wordSection.appendChild(styleTitle);
+        
+        const styleGrid = document.createElement('div');
+        styleGrid.id = 'style-grid';
+        styleGrid.style.cssText = `
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        `;
+        
+        // 添加风格选项
+        wordPanelStyles.forEach((style, index) => {
+            const styleOption = document.createElement('div');
+            styleOption.style.cssText = `
+                padding: 15px;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-align: center;
+                font-size: 14px;
+                font-weight: 500;
+                background: ${style.backgroundColor};
+                color: ${style.textColor};
+                border: 2px solid ${style.borderColor};
+            `;
+            styleOption.dataset.styleIndex = index;
+            styleOption.textContent = style.name;
+            
+            // 添加选中效果
+            if (index === getCurrentStyleIndex()) {
+                styleOption.style.boxShadow = '0 0 0 2px #667eea';
+                styleOption.style.transform = 'scale(1.05)';
+            }
+            
+            styleGrid.appendChild(styleOption);
+        });
+        
+        wordSection.appendChild(styleGrid);
+        contentContainer.appendChild(wordSection);
+
+        // 添加头像设置区域
+        const avatarSection = document.createElement('div');
+        avatarSection.style.cssText = `
+            background: #fafafa;
+            border: 2px dashed #e1e5e9;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        `;
+
+        avatarSection.addEventListener('mouseenter', () => {
+            avatarSection.style.borderColor = '#667eea';
+            avatarSection.style.background = '#f0f2ff';
+        });
+
+        avatarSection.addEventListener('mouseleave', () => {
+            avatarSection.style.borderColor = '#e1e5e9';
+            avatarSection.style.background = '#fafafa';
+        });
+
+        const avatarTitle = document.createElement('h4');
+        avatarTitle.textContent = '头像生成设置';
+        avatarTitle.style.marginTop = '0';
+        avatarTitle.style.marginBottom = '20px';
+        avatarTitle.style.color = '#333';
+        avatarTitle.style.fontSize = '16px';
+        avatarSection.appendChild(avatarTitle);
+
+        // 头像生成开关
+        const avatarToggleDiv = document.createElement('div');
+        avatarToggleDiv.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        `;
+        
+        const avatarToggleLabel = document.createElement('label');
+        avatarToggleLabel.textContent = '启用头像生成功能';
+        avatarToggleLabel.style.fontWeight = '500';
+        avatarToggleLabel.style.color = '#555';
+        
+        const avatarToggle = document.createElement('input');
+        avatarToggle.type = 'checkbox';
+        avatarToggle.checked = avatarGenFlag;
+        avatarToggle.id = 'avatar-toggle';
+        avatarToggle.style.cssText = `
+            width: 40px;
+            height: 20px;
+            cursor: pointer;
+        `;
+        
+        avatarToggleDiv.appendChild(avatarToggleLabel);
+        avatarToggleDiv.appendChild(avatarToggle);
+        avatarSection.appendChild(avatarToggleDiv);
+        
+        contentContainer.appendChild(avatarSection);
+
+        // 添加保存按钮
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = '保存设置';
+        saveBtn.style.cssText = `
+            width: 100%;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            margin-top: 20px;
+        `;
+        
+        saveBtn.addEventListener('mouseenter', () => {
+            saveBtn.style.transform = 'translateY(-2px)';
+            saveBtn.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+        });
+        
+        saveBtn.addEventListener('mouseleave', () => {
+            saveBtn.style.transform = 'translateY(0)';
+            saveBtn.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)';
+        });
+        
+        saveBtn.onclick = saveSettings;
+        contentContainer.appendChild(saveBtn);
+
+        // 添加到页面
+        document.body.appendChild(panel);
+
+        // 添加拖拽功能
+        addPanelDragFunctionality(panel, titleBar);
+
+        // 添加事件监听
+        addSettingsEventListeners();
+
+        return panel;
+    }
+
+    // 面板拖拽功能
+    function addPanelDragFunctionality(panel, dragHandle) {
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        dragHandle.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            offsetX = e.clientX - panel.getBoundingClientRect().left;
+            offsetY = e.clientY - panel.getBoundingClientRect().top;
+            dragHandle.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const x = e.clientX - offsetX;
+            const y = e.clientY - offsetY;
+
+            // 确保面板不会超出视口
+            const maxX = window.innerWidth - panel.offsetWidth;
+            const maxY = window.innerHeight - panel.offsetHeight;
+
+            panel.style.left = Math.max(0, Math.min(x, maxX)) + 'px';
+            panel.style.top = Math.max(0, Math.min(y, maxY)) + 'px';
+            panel.style.transform = 'none';
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                dragHandle.style.cursor = 'move';
+            }
+        });
+    }
+
+    // 显示设置面板
+    function showSettingsPanel() {
+        const panel = createSettingsPanel();
+        panel.style.display = 'flex';
+        settingsPanelVisible = true;
+    }
+
+    // 隐藏设置面板
+    function hideSettingsPanel() {
+        const panel = document.getElementById('tail-word-settings-panel');
+        if (panel) {
+            panel.style.display = 'none';
+            settingsPanelVisible = false;
+        }
+    }
+
+    // 保存设置
+    function saveSettings() {
+        // 保存小尾巴设置
+        const suffixToggle = document.getElementById('suffix-toggle');
+        const customToggle = document.getElementById('custom-suffix-toggle');
+        const customInput = document.getElementById('custom-suffix-input');
+        const presetSelect = document.getElementById('suffix-preset-select');
+        
+        suffixFlag = suffixToggle.checked;
+        window.localStorage['xwb_flag'] = suffixFlag;
+        
+        if (customToggle.checked) {
+            window.localStorage['xwb_is_custom_suffix'] = 'true';
+            window.localStorage['xwb_custom_suffix'] = customInput.value.trim();
+        } else {
+            delete window.localStorage['xwb_is_custom_suffix'];
+            window.localStorage['xwb_suffix_index'] = presetSelect.value;
+        }
+        
+        // 保存单词设置
+        const tailWordCount = document.getElementById('tail-word-count');
+        const sideWordCountInput = document.getElementById('side-word-count');
+        
+        wordCount = parseInt(tailWordCount.value);
+        if (!isNaN(wordCount) && wordCount >= 0 && wordCount <= 20) {
+            window.localStorage['xwb_tail_word_count'] = wordCount;
+        }
+        
+        const newSideCount = parseInt(sideWordCountInput.value);
+        if (!isNaN(newSideCount) && newSideCount >= 1 && newSideCount <= 20) {
+            sideWordCount = newSideCount;
+            window.localStorage['xwb_side_word_count'] = sideWordCount;
+            // 立即更新左侧单词显示
+            initializeWordDisplay();
+        }
+        
+        // 保存头像设置
+        const avatarToggle = document.getElementById('avatar-toggle');
+        avatarGenFlag = avatarToggle.checked;
+        window.localStorage['avatar_gen_flag'] = avatarGenFlag;
+        
+        // 显示保存成功提示
+        showNotification('设置保存成功！', 'success');
+        
+        // 更新预览
+        updateSuffixPreview();
+    }
+
+    // 更新小尾巴预览
+    function updateSuffixPreview() {
+        const previewDiv = document.getElementById('suffix-preview');
+        if (previewDiv) {
+            previewDiv.textContent = getCurrentSuffixText();
+        }
+    }
+
+    // 添加设置面板事件监听
+    function addSettingsEventListeners() {
+        // 小尾巴开关和自定义切换
+        const suffixToggle = document.getElementById('suffix-toggle');
+        const customToggle = document.getElementById('custom-suffix-toggle');
+        const customInput = document.getElementById('custom-suffix-input');
+        const presetSelect = document.getElementById('suffix-preset-select');
+        
+        // 监听预览更新
+        suffixToggle.addEventListener('change', updateSuffixPreview);
+        customToggle.addEventListener('change', updateSuffixPreview);
+        customInput.addEventListener('input', updateSuffixPreview);
+        presetSelect.addEventListener('change', updateSuffixPreview);
+        
+        // 风格选择
+        const styleGrid = document.getElementById('style-grid');
+        if (styleGrid) {
+            styleGrid.addEventListener('click', (e) => {
+                const styleOption = e.target;
+                if (styleOption.dataset.styleIndex !== undefined) {
+                    const styleIndex = parseInt(styleOption.dataset.styleIndex);
+                    
+                    // 更新选中状态
+                    Array.from(styleGrid.children).forEach(child => {
+                        child.style.boxShadow = '';
+                        child.style.transform = '';
+                    });
+                    styleOption.style.boxShadow = '0 0 0 2px #667eea';
+                    styleOption.style.transform = 'scale(1.05)';
+                    
+                    // 应用样式
+                    applyWordPanelStyle(styleIndex);
+                }
+            });
+        }
+    }
+
+    // 显示通知
+    function showNotification(message, type = 'info') {
+        // 检查是否已存在通知
+        const existingNotification = document.getElementById('tail-word-notification');
+        if (existingNotification) {
+            document.body.removeChild(existingNotification);
+        }
+        
+        const notification = document.createElement('div');
+        notification.id = 'tail-word-notification';
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            z-index: 10001;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            transform: translateX(100%);
+            background: ${type === 'success' ? '#52c41a' : type === 'error' ? '#ff4d4f' : '#1890ff'};
+            color: white;
+        `;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // 显示动画
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // 自动隐藏
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 2500);
+    }
 
     // 确保单词数量在合理范围内
     if (isNaN(wordCount) || wordCount < 0 || wordCount > 20) {
@@ -62,29 +766,7 @@
         '胸有丘壑，眼存山河。',
         '但行好事，莫问前程。',
         '愿有岁月可回首，且以深情共白头。',
-        '人间烟火气，最抚凡人心。',
-        '生活明朗，万物可爱。',
-        '保持热爱，奔赴山海。',
-        '山高水长，江湖再见。',
-        '平安喜乐，万事胜意。',
-        '知足常乐，随遇而安。',
-        '星辰大海，永不止步。',
-        '未来可期，人间值得。',
-        '不忘初心，方得始终。',
-        '人生海海，山山而川。',
-        '生如夏花之绚烂，死如秋叶之静美。',
-        '行到水穷处，坐看云起时。',
-        '海纳百川，有容乃大。',
-        '壁立千仞，无欲则刚。',
-        '业精于勤，荒于嬉。',
-        '书山有路勤为径，学海无涯苦作舟。',
-        '纸上得来终觉浅，绝知此事要躬行。',
-        '读书破万卷，下笔如有神。',
-        '问渠那得清如许，为有源头活水来。',
-        '横眉冷对千夫指，俯首甘为孺子牛。',
-        '天生我材必有用，千金散尽还复来。',
-        '长风破浪会有时，直挂云帆济沧海。',
-        '人生得意须尽欢，莫使金樽空对月。'
+        '人间烟火气，最抚凡人心。'
     ];
 
     // 获取当前选中的小尾巴索引
@@ -183,20 +865,8 @@
         }
     }
 
-    // 创建单词背景样式选择菜单
-    GM_registerMenuCommand(`设置单词面板背景（当前：${wordPanelStyles[getCurrentStyleIndex()].name}）`, () => {
-        let menuStr = '===== 单词面板背景样式 =====\n';
-        wordPanelStyles.forEach((style, index) => {
-            menuStr += `${index + 1}. ${style.name}\n`;
-        });
-
-        const choice = prompt(menuStr + '请输入样式编号选择背景：');
-        if (!isNaN(choice) && choice >= 1 && choice <= wordPanelStyles.length) {
-            const styleIndex = parseInt(choice) - 1;
-            applyWordPanelStyle(styleIndex);
-            // alert(`已切换到 ${wordPanelStyles[styleIndex].name} 样式！`);
-        }
-    });
+    // 替换原有菜单系统，添加统一的设置按钮
+    GM_registerMenuCommand("设置小尾巴和单词头像", showSettingsPanel);
 
     // 创建或获取左侧聊天区外的单词显示区域
     function getOrCreateWordDisplayArea() {
@@ -411,314 +1081,6 @@
             setTimeout(initializeWordDisplay, 1000);
         }
     }
-
-    // 创建统一的小尾巴设置菜单
-    GM_registerMenuCommand("小尾巴设置", openSuffixSettingsPanel);
-
-    // 创建设置左侧显示单词数量的菜单（保留单独入口）
-    GM_registerMenuCommand("设置左侧显示单词数量", () => {
-        const newCount = prompt("请输入左侧显示的单词数量（1-20）：", sideWordCount);
-        const count = parseInt(newCount);
-        if (!isNaN(count) && count >= 1 && count <= 20) {
-            sideWordCount = count;
-            window.localStorage['xwb_side_word_count'] = sideWordCount;
-            // 立即更新左侧单词显示
-            initializeWordDisplay();
-        } else {
-            alert("请输入有效的数字（1-20）！");
-        }
-    });
-
-    // 打开小尾巴设置面板
-    function openSuffixSettingsPanel() {
-        // 获取当前自定义状态
-        let isCustom = window.localStorage['xwb_is_custom_suffix'] === 'true';
-        
-        // 创建设置面板容器
-        const panel = document.createElement('div');
-        panel.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            padding: 20px;
-            z-index: 10000;
-            width: 500px;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        `;
-
-        // 面板标题
-        const title = document.createElement('h3');
-        title.textContent = '小尾巴设置';
-        title.style.cssText = `
-            margin-top: 0;
-            margin-bottom: 20px;
-            text-align: center;
-            color: #333;
-        `;
-        panel.appendChild(title);
-
-        // 当前小尾巴预览
-        const previewDiv = document.createElement('div');
-        previewDiv.style.cssText = `
-            background: #f0f8ff;
-            border: 1px solid #b0e0e6;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        `;
-        const previewTitle = document.createElement('div');
-        previewTitle.textContent = '当前小尾巴预览：';
-        previewTitle.style.cssText = `
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #0066cc;
-        `;
-        const previewContent = document.createElement('div');
-        previewContent.textContent = getCurrentSuffixText();
-        previewContent.style.cssText = `
-            color: #333;
-            font-style: italic;
-        `;
-        previewDiv.appendChild(previewTitle);
-        previewDiv.appendChild(previewContent);
-        panel.appendChild(previewDiv);
-
-        // 小尾巴开关
-        const toggleDiv = document.createElement('div');
-        toggleDiv.style.cssText = `
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        `;
-        const toggleLabel = document.createElement('span');
-        toggleLabel.textContent = '启用小尾巴功能：';
-        toggleLabel.style.fontWeight = 'bold';
-        const toggleSwitch = document.createElement('input');
-        toggleSwitch.type = 'checkbox';
-        toggleSwitch.checked = suffixFlag;
-        toggleSwitch.style.cssText = `
-            width: 40px;
-            height: 20px;
-            cursor: pointer;
-        `;
-        toggleSwitch.onchange = () => {
-            suffixFlag = toggleSwitch.checked;
-            window.localStorage['xwb_flag'] = suffixFlag;
-        };
-        toggleDiv.appendChild(toggleLabel);
-        toggleDiv.appendChild(toggleSwitch);
-        panel.appendChild(toggleDiv);
-
-        // 小尾巴单词数量设置
-        const wordCountDiv = document.createElement('div');
-        wordCountDiv.style.cssText = `
-            margin-bottom: 20px;
-        `;
-        const wordCountLabel = document.createElement('div');
-        wordCountLabel.textContent = '小尾巴单词数量：';
-        wordCountLabel.style.cssText = `
-            font-weight: bold;
-            margin-bottom: 10px;
-        `;
-        const wordCountInput = document.createElement('input');
-        wordCountInput.type = 'range';
-        wordCountInput.min = '0';
-        wordCountInput.max = '20';
-        wordCountInput.value = wordCount;
-        wordCountInput.style.cssText = `
-            width: calc(100% - 60px);
-            margin-right: 10px;
-            vertical-align: middle;
-        `;
-        const wordCountDisplay = document.createElement('span');
-        wordCountDisplay.textContent = wordCount;
-        wordCountDisplay.style.cssText = `
-            display: inline-block;
-            width: 40px;
-            text-align: center;
-            font-weight: bold;
-            vertical-align: middle;
-        `;
-        wordCountInput.oninput = () => {
-            wordCountDisplay.textContent = wordCountInput.value;
-        };
-        wordCountInput.onchange = () => {
-            wordCount = parseInt(wordCountInput.value);
-            window.localStorage['xwb_tail_word_count'] = wordCount;
-        };
-        wordCountDiv.appendChild(wordCountLabel);
-        wordCountDiv.appendChild(wordCountInput);
-        wordCountDiv.appendChild(wordCountDisplay);
-        panel.appendChild(wordCountDiv);
-
-        // 小尾巴选择
-        const suffixSelectDiv = document.createElement('div');
-        suffixSelectDiv.style.cssText = `
-            margin-bottom: 20px;
-        `;
-        const suffixSelectLabel = document.createElement('div');
-        suffixSelectLabel.textContent = '选择小尾巴：';
-        suffixSelectLabel.style.cssText = `
-            font-weight: bold;
-            margin-bottom: 10px;
-        `;
-        const suffixSelect = document.createElement('select');
-        suffixSelect.style.cssText = `
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            margin-bottom: 15px;
-        `;
-
-        // 添加预设选项
-        suffixOptions.forEach((option, index) => {
-            const opt = document.createElement('option');
-            opt.value = `preset-${index}`;
-            opt.textContent = option;
-            if (!isCustom && index === getCurrentSuffixIndex()) {
-                opt.selected = true;
-            }
-            suffixSelect.appendChild(opt);
-        });
-
-        // 添加自定义选项
-        const customOpt = document.createElement('option');
-        customOpt.value = 'custom';
-        customOpt.textContent = '自定义小尾巴';
-        if (isCustom) {
-            customOpt.selected = true;
-        }
-        suffixSelect.appendChild(customOpt);
-
-        suffixSelect.onchange = () => {
-            const selectedValue = suffixSelect.value;
-            if (selectedValue.startsWith('preset-')) {
-                const index = parseInt(selectedValue.split('-')[1]);
-                window.localStorage['xwb_suffix_index'] = index;
-                if (window.localStorage['xwb_is_custom_suffix']) {
-                    delete window.localStorage['xwb_is_custom_suffix'];
-                }
-                // 更新预览
-                previewContent.textContent = getCurrentSuffixText();
-                // 隐藏自定义输入框
-                customSuffixDiv.style.display = 'none';
-            } else if (selectedValue === 'custom') {
-                // 显示自定义输入框
-                customSuffixDiv.style.display = 'block';
-                customSuffixTextarea.focus();
-            }
-        };
-        suffixSelectDiv.appendChild(suffixSelectLabel);
-        suffixSelectDiv.appendChild(suffixSelect);
-        panel.appendChild(suffixSelectDiv);
-
-        // 自定义小尾巴输入
-        const customSuffixDiv = document.createElement('div');
-        customSuffixDiv.id = 'custom-suffix-input';
-        customSuffixDiv.style.cssText = `
-            margin-bottom: 20px;
-            ${isCustom ? '' : 'display: none;'}
-        `;
-        const customSuffixLabel = document.createElement('div');
-        customSuffixLabel.textContent = '自定义小尾巴：';
-        customSuffixLabel.style.cssText = `
-            font-weight: bold;
-            margin-bottom: 10px;
-        `;
-        const customSuffixTextarea = document.createElement('textarea');
-        customSuffixTextarea.style.cssText = `
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            min-height: 80px;
-            resize: vertical;
-            box-sizing: border-box;
-        `;
-        customSuffixTextarea.value = window.localStorage['xwb_custom_suffix'] || '';
-        customSuffixTextarea.oninput = () => {
-            const customText = customSuffixTextarea.value.trim();
-            if (customText) {
-                window.localStorage['xwb_custom_suffix'] = customText;
-                window.localStorage['xwb_is_custom_suffix'] = 'true';
-                // 更新预览
-                previewContent.textContent = customText;
-            }
-        };
-        customSuffixDiv.appendChild(customSuffixLabel);
-        customSuffixDiv.appendChild(customSuffixTextarea);
-        panel.appendChild(customSuffixDiv);
-
-        // 保存按钮
-        const saveBtn = document.createElement('button');
-        saveBtn.textContent = '保存设置';
-        saveBtn.style.cssText = `
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-right: 10px;
-        `;
-        saveBtn.onclick = () => {
-            // 保存所有设置
-            window.localStorage['xwb_flag'] = suffixFlag;
-            window.localStorage['xwb_tail_word_count'] = wordCount;
-            
-            // 如果自定义小尾巴不为空，保存自定义设置
-            const customText = customSuffixTextarea.value.trim();
-            if (customText) {
-                window.localStorage['xwb_custom_suffix'] = customText;
-                window.localStorage['xwb_is_custom_suffix'] = 'true';
-            }
-            
-            alert('小尾巴设置已保存！');
-            document.body.removeChild(panel);
-        };
-
-        // 取消按钮
-        const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = '取消';
-        cancelBtn.style.cssText = `
-            background: #f44336;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        `;
-        cancelBtn.onclick = () => {
-            document.body.removeChild(panel);
-        };
-
-        // 按钮容器
-        const buttonsDiv = document.createElement('div');
-        buttonsDiv.style.cssText = `
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-        `;
-        buttonsDiv.appendChild(saveBtn);
-        buttonsDiv.appendChild(cancelBtn);
-        panel.appendChild(buttonsDiv);
-
-        // 添加到页面
-        document.body.appendChild(panel);
-    };
 
     // 发送消息API函数
     function sendMsgApi(msg) {
