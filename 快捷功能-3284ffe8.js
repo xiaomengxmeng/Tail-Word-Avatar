@@ -17,7 +17,6 @@
 // 2025-12-5 18 新增 移除小贴士功能
 // 2025-12-5 18 新增 停靠按钮, 允许用户自定义停靠位置或贴边用户信息. !!! 注意, 贴靠时如果边栏消失则插件无法渲染!!!
 // 2025-12-5 18 优化样式, 贴边情况下, 动态排列按钮, 在极窄边框下自动换行
-// 2025-12-12 muli 新增父按钮可联动子按钮冷却功能，新增消息体右上角可快捷复读
 
 (function () {
     'use strict';
@@ -204,7 +203,7 @@
       mutations.forEach((mutation) => {
           // 检查新增的节点
           mutation.addedNodes.forEach((node) => {
-              
+
               // 如果新增的节点包含 chats__content 子元素
               if (node.nodeType === Node.ELEMENT_NODE && node.querySelectorAll) {
                   node.querySelectorAll('.chats__content').forEach(addRepeatButton);
@@ -260,36 +259,26 @@
 
             // 找到当前 chats__content 内的 p 标签
             const pTags = contentDiv.querySelector('.vditor-reset.ft__smaller p');
-
-            if (pTags) {
-
-                // 获取所有 p 标签的内容
-                let content = '';
-
-                // 如果是单个 p 标签
-                if (pTags.length === undefined) {
-                    content = pTags.textContent || pTags.innerText;
-                } else {
-                    // 如果是多个 p 标签
-                    content = Array.from(pTags)
-                        .map(p => p.textContent || p.innerText)
-                        .join('\n');
-                }
-
-                // 发送消息
-                sendMsg(content.trim());
-
-                // 推送右上角提示
-                // 提取消息信息
-                const messageInfo = extractMessageInfo(contentDiv);
-                if (!messageInfo || !messageInfo.username || !messageInfo.messageId) {
-
-                    return;
-                }
-                // 显示成功提示
-                showTemporaryHint(`已复读 ${messageInfo.displayName || messageInfo.username} 的消息`);
-
+            // 提取消息的HTML内容
+            const messageHTML = extractMessageHTML(contentDiv);
+            if (!messageHTML) {
+                  console.error('无法提取消息内容');
+                  return;
             }
+
+
+            // 发送消息
+            sendMsg(messageHTML);
+
+            // 推送右上角提示
+            // 提取消息信息
+            const messageInfo = extractMessageInfo(contentDiv);
+            if (!messageInfo || !messageInfo.username || !messageInfo.messageId) {
+
+                return;
+            }
+            // 显示成功提示
+            showTemporaryHint(`已复读 ${messageInfo.displayName || messageInfo.username} 的消息`);
         });
 
         // 将按钮添加到 chats__content 中

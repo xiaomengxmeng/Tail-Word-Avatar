@@ -598,15 +598,6 @@ window.editButton = function(index) {
             clearMsgButton.onclick = clearPrivateMessages;
             buttonContainer.appendChild(clearMsgButton);
             
-            // 添加复读按钮
-            var repeatButton = document.createElement('button');
-            repeatButton.id = 'repeat-message-button';
-            repeatButton.textContent = '复读';
-            repeatButton.className = 'green';
-            repeatButton.setAttribute('style', 'margin-right:5px; margin-bottom:5px; padding:4px 8px; border-radius: 4px;');
-            repeatButton.onclick = repeatLastMessage;
-            buttonContainer.appendChild(repeatButton);
-            
         } catch (e) {
             console.error('创建按钮失败:', e);
             setTimeout(createButtons, 2000);
@@ -631,47 +622,13 @@ window.editButton = function(index) {
         });
     }
     
-    // 提取当前消息内容（用于复读功能）
-    function extractCurrentMessageContent() {
-        // 查找最近的消息元素
-        const chatItems = document.querySelectorAll('.chats__item');
-        if (chatItems.length === 0) return null;
+    // 提取消息的HTML内容（包括嵌套引用）
+    function extractMessageHTML(chatContent) {
+        const vditorReset = chatContent.querySelector('.vditor-reset');
+        if (!vditorReset) return null;
         
-        // 获取最后一条消息
-        const lastChatItem = chatItems[chatItems.length - 1];
-        const contentDiv = lastChatItem.querySelector('.chats__content');
-        if (!contentDiv) return null;
-        
-        // 提取p标签内容
-        const pTags = contentDiv.querySelectorAll('.vditor-reset.ft__smaller p');
-        if (pTags.length === 0) return null;
-        
-        // 拼接所有p标签内容
-        let content = '';
-        pTags.forEach(p => {
-            content += (p.textContent || p.innerText) + '\n';
-        });
-        
-        return content.trim();
-    }
-    
-    // 复读功能
-    function repeatLastMessage() {
-        const content = extractCurrentMessageContent();
-        if (!content) {
-            showNotification('未找到可复读的消息', 'error');
-            return;
-        }
-        
-        // 使用sendMessagesApi发送消息
-        sendMessagesApi([content])
-            .then(() => {
-                showNotification('消息已复读', 'success');
-            })
-            .catch(error => {
-                console.error('复读消息失败:', error);
-                showNotification('复读消息失败，请稍后重试', 'error');
-            });
+        // 返回内部的HTML，包括嵌套的引用
+        return vditorReset.innerHTML;
     }
 
     // 私信接口
@@ -1382,21 +1339,16 @@ window.editButton = function(index) {
         event.preventDefault();
         event.stopPropagation();
         
-        // 提取消息内容
-        const pTags = chatContent.querySelectorAll('.vditor-reset.ft__smaller p');
-        if (pTags.length === 0) return;
-        
-        // 拼接所有p标签内容
-        let content = '';
-        pTags.forEach(p => {
-            content += (p.textContent || p.innerText) + '\n';
-        });
-        content = content.trim();
-        
-        if (!content) return;
+        // 提取消息的HTML内容
+        const messageHTML = extractMessageHTML(chatContent);
+        if (!messageHTML) {
+            console.error('无法提取消息内容');
+            showNotification('无法提取消息内容', 'error');
+            return;
+        }
         
         // 发送消息
-        sendMessagesApi([content])
+        sendMessagesApi([messageHTML])
             .then(() => {
                 showNotification('消息已复读', 'success');
             })
