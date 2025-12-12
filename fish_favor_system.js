@@ -28,7 +28,7 @@
         // 边界检查：确保范围有效
         if (favorRange.min >= favorRange.max) {
             console.warn('好感度范围配置无效：最小值必须小于最大值');
-            return 50; // 返回中间值作为默认值
+            return (favorRange.max - favorRange.min)/2+favorRange.min ; // 返回中间值作为默认值
         }
         
         // 确保好感度在范围内
@@ -36,7 +36,7 @@
         
         // 使用(当前好感度-min)/(max-min)公式计算百分比
         const range = favorRange.max - favorRange.min;
-        if (range === 0) return 50; // 防止除以零
+        if (range === 0) return 100; // 防止除以零
         
         const percentage = ((clampedFavor - favorRange.min) / range) * 100;
         
