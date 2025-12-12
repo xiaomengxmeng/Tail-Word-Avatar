@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.18
+// @version      1.0.19
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -16,7 +16,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.18";
+    const version_us = "v1.0.19";
     // 按钮数据结构：{id, textContent, message, className , count, hidden}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
@@ -1411,6 +1411,17 @@ window.editButton = function(index) {
     // 注册油猴菜单
     GM_registerMenuCommand('按钮管理面板', openButtonManagerPanel);
     
+    // 提取消息信息
+    function extractMessageInfo(chatContent) {
+        const chatItem = chatContent.closest('.chats__item');
+        if (!chatItem) return null;
+        
+        // 获取消息ID
+        const messageId = chatItem.id;
+        
+        return { messageId };
+    }
+    
     // 双击消息内容复读功能
     document.addEventListener('dblclick', function(event) {
         // 检查是否双击了消息内容区域
@@ -1421,31 +1432,39 @@ window.editButton = function(index) {
         event.preventDefault();
         event.stopPropagation();
         
-        // 提取消息的HTML内容
-        const messageHTML = extractMessageHTML(chatContent);
-        if (!messageHTML) {
-            console.error('无法提取消息内容');
-            showNotification('无法提取消息内容', 'error');
+        // 检查是否为红包消息
+        if (chatContent.querySelector('.hongbao__item')) {
+            showNotification('善良的小鱼油，别复读红包🧧哦！！！！！', 'warning');
             return;
         }
         
-        // 将HTML转换为Markdown格式
-        const markdownContent = htmlToMarkdownQuote(messageHTML);
-        if (!markdownContent) {
-            console.error('无法将HTML转换为Markdown');
-            showNotification('无法转换消息格式', 'error');
+        // 检查是否为音乐消息
+        if (chatContent.querySelector('.music-player')) {
+            showNotification('善良的小鱼油，别复读音乐🎵哦！！！！！', 'warning');
             return;
         }
         
-        // 发送消息
-        sendMessagesApi([markdownContent])
-            .then(() => {
+        // 提取消息信息
+        const messageInfo = extractMessageInfo(chatContent);
+        if (!messageInfo || !messageInfo.messageId) {
+            console.error('无法提取消息信息');
+            showNotification('无法提取消息信息', 'error');
+            return;
+        }
+        
+        // 检查消息ID格式并调用鱼排自带的复读函数
+        if (messageInfo.messageId.startsWith('chatroom')) {
+            const chatId = messageInfo.messageId.slice(8);
+            try {
+                ChatRoom.repeat(chatId);
                 showNotification('消息已复读', 'success');
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('复读消息失败:', error);
                 showNotification('复读消息失败，请稍后重试', 'error');
-            });
+            }
+        } else {
+            showNotification('不支持的消息类型', 'error');
+        }
     });
     
     // 当页面加载完成时初始化

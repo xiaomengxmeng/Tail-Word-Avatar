@@ -195,96 +195,153 @@
         }
     };
 
-  // 为所有已存在的 chats__content 添加按钮
-  document.querySelectorAll('.chats__content').forEach(addRepeatButton);
+    // 添加复读按钮的函数
+    function addRepeatButtonOptimized(chatItem) {
+        if (chatItem.classList.contains('repeat-btn-added')) {
+            return;
+        }
 
-  // 使用 MutationObserver 监听新出现的 chats__content
-  const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-          // 检查新增的节点
-          mutation.addedNodes.forEach((node) => {
+        const chatContent = chatItem.querySelector('.chats__content');
+        if (!chatContent) return;
 
-              // 如果新增的节点包含 chats__content 子元素
-              if (node.nodeType === Node.ELEMENT_NODE && node.querySelectorAll) {
-                  node.querySelectorAll('.chats__content').forEach(addRepeatButton);
-              }
-          });
-      });
-  });
+        // 确保chatItem有相对定位
+        chatItem.style.position = 'relative';
 
-  // 开始观察整个文档的变化
-  observer.observe(document.body, {
-      childList: true,
-      subtree: true
-  });
+        // 创建复读按钮
+        const repeatBtn = document.createElement('button');
+        repeatBtn.className = 'repeat-btn';
+        repeatBtn.innerHTML = '↲↲'; // 或使用 '🔁'
+        repeatBtn.title = '复读';
+        repeatBtn.style.cssText = `
+            position: absolute;
+            background: rgba(191, 185, 185, 0.5);
+            border: none;
+            border-radius: 3px;
+            padding: 2px 6px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0.7;
+            transition: opacity 0.2s, transform 0.2s, background 0.2s;
+            z-index: 10;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            pointer-events: auto;
+        `;
 
-  // 添加复读按钮
-  function addRepeatButton(contentDiv) {
-      // 如果已经添加过按钮，跳过
-      if (contentDiv.classList.contains('repeat-btn-added')) {
-          return;
-      }
+        // 更新位置的函数
+        const updatePosition = () => {
+            const contentRect = chatContent.getBoundingClientRect();
+            const itemRect = chatItem.getBoundingClientRect();
 
-      // 创建复读按钮
-      const repeatBtn = document.createElement('button');
-      repeatBtn.className = 'repeat-btn';
-      repeatBtn.innerHTML = '↲↲';
-      repeatBtn.title = '复读';
-      repeatBtn.style.cssText = `
-          position: absolute;
-          top: 3px;
-          right: 2px;
-          background: rgba(191,185,185,0.5);
-          border: none;
-          border-radius: 3px;
-          padding: 2px 6px;
-          cursor: pointer;
-          font-size: 12px;
-          opacity: 0.7;
-          transition: opacity 0.2s;
-          z-index: 10;
-      `;
+            // 计算位置：放在chats__content的右上角外面
+            const top = contentRect.top - itemRect.top - 8;
+            const right = itemRect.right - contentRect.right - 10;
 
+            repeatBtn.style.top = `${top}px`;
+            repeatBtn.style.right = `${right}px`;
+        };
+
+        // 鼠标效果
         repeatBtn.addEventListener('mouseenter', () => {
             repeatBtn.style.opacity = '1';
+            repeatBtn.style.transform = 'scale(1.1)';
+            repeatBtn.style.background = 'rgba(191, 185, 185, 0.8)';
         });
 
         repeatBtn.addEventListener('mouseleave', () => {
             repeatBtn.style.opacity = '0.7';
+            repeatBtn.style.transform = 'scale(1)';
+            repeatBtn.style.background = 'rgba(191, 185, 185, 0.5)';
         });
 
-        // 点击事件 - 提取p标签内容
+        // 点击处理
         repeatBtn.addEventListener('click', function(e) {
+            e.preventDefault();
             e.stopPropagation();
-
-            // 找到当前 chats__content 内的 p 标签
-            const pTags = contentDiv.querySelector('.vditor-reset.ft__smaller p');
-            // 提取消息的HTML内容
-            const messageHTML = extractMessageHTML(contentDiv);
-            if (!messageHTML) {
-                  console.error('无法提取消息内容');
-                  return;
-            }
-
-
-            // 发送消息
-            sendMsg(messageHTML);
 
             // 推送右上角提示
             // 提取消息信息
-            const messageInfo = extractMessageInfo(contentDiv);
+            const messageInfo = extractMessageInfo(chatContent);
             if (!messageInfo || !messageInfo.username || !messageInfo.messageId) {
 
                 return;
             }
+            //音乐、红包禁止复读
+            if (chatContent.querySelector('.music-player')) {
+                showTemporaryHint(`善良的小鱼油，别复读音乐🎵哦！！！！！`);
+                return;
+            }
+            if (chatContent.querySelector('.hongbao__item')) {
+                showTemporaryHint(`善良的小鱼油，别复读红包🧧哦！！！！！`);
+                return;
+            }
+
+            if (messageInfo.messageId.startsWith('chatroom')) {
+                const chatId = messageInfo.messageId.slice(8);
+                //复读
+                ChatRoom.repeat(chatId);
+            }
+
+
             // 显示成功提示
             showTemporaryHint(`已复读 ${messageInfo.displayName || messageInfo.username} 的消息`);
         });
 
-        // 将按钮添加到 chats__content 中
-        contentDiv.style.position = 'relative';
-        contentDiv.appendChild(repeatBtn);
+        // 添加到DOM
+        chatItem.appendChild(repeatBtn);
+
+        // 初始定位
+        requestAnimationFrame(updatePosition);
+
+        // 标记已添加
+        chatItem.classList.add('repeat-btn-added');
+
+        // 监听变化重新定位
+        const resizeObserver = new ResizeObserver(() => {
+            requestAnimationFrame(updatePosition);
+        });
+
+        resizeObserver.observe(chatItem);
+        resizeObserver.observe(chatContent);
     }
+
+    // 为所有聊天项添加按钮
+    document.querySelectorAll('.chats__item').forEach(addRepeatButtonOptimized);
+
+    // 监听新聊天项
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    if (node.matches && node.matches('.chats__item')) {
+                        setTimeout(() => addRepeatButtonOptimized(node), 100);
+                    }
+
+                    const items = node.querySelectorAll ? node.querySelectorAll('.chats__item') : [];
+                    items.forEach(item => {
+                        setTimeout(() => addRepeatButtonOptimized(item), 100);
+                    });
+                }
+            });
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+
+    // 添加一些CSS样式
+    const style = document.createElement('style');
+    style.textContent = `
+        .repeat-btn:hover {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+        }
+
+        .chats__item {
+            min-height: 1px; /* 确保有高度用于定位 */
+        }
+    `;
+    document.head.appendChild(style);
 
     // ================== 默认配置 ==================
     const ORIGINAL_BUTTONS_CONFIG = [
@@ -381,7 +438,7 @@
                 },
             ]
         },
-    	  {
+        {
             "text": "好感度",
             "color": "btn-red",
             "action": {
@@ -676,8 +733,8 @@
         // 获取当前时间
         const now = Date.now();
         event.preventDefault();
-        // 检查是否为双击（300ms内点击同一a标签）
-        if (lastClick.element === link && (now - lastClick.time) < 300) {
+        // 检查是否为双击（400ms内点击同一a标签）
+        if (lastClick.element === link && (now - lastClick.time) < 400) {
             // 双击事件：阻止跳转，插入@用户名
             event.preventDefault();
             event.stopPropagation();
@@ -686,6 +743,7 @@
             if (username) {
                 // 插入到输入框
                 insertToVditorInput(`@${username} `);
+                //ChatRoom.at('muli', '1765523194512', true)
             }
 
             // 重置状态
@@ -697,14 +755,14 @@
             lastClick.element = link;
             lastClick.time = now;
 
-            // 设置超时，300ms后重置状态
+            // 设置超时，500ms后重置状态
             setTimeout(() => {
                 if (lastClick.element === link) {
                     lastClick.element = null;
                     lastClick.time = 0;
                     window.location.href = link.href;
                 }
-            }, 400);
+            }, 500);
         }
     });
 
@@ -919,24 +977,31 @@
             return;
         }
 
-        // 提取消息的HTML内容
-        const messageHTML = extractMessageHTML(chatContent);
-        if (!messageHTML) {
-            console.error('无法提取消息内容');
-            return;
+        if (messageInfo.messageId.startsWith('chatroom')) {
+            const chatId = messageInfo.messageId.slice(8);
+            //复读
+            ChatRoom.at(messageInfo.username, chatId, false);
+            insertAtEndOfVditorInput("");
         }
 
-        // 将HTML转换为Markdown格式
-        const markdownContent = htmlToMarkdownQuote(messageHTML);
-
-        // 生成新的引用层
-        const newQuote = generateNewQuoteLayer(messageInfo, markdownContent);
-
-        // 在现有内容后插入引用，并将光标移动到最前面
-        const success = insertAtEndOfVditorInput(newQuote);
+        // // 提取消息的HTML内容
+        // const messageHTML = extractMessageHTML(chatContent);
+        // if (!messageHTML) {
+        //     console.error('无法提取消息内容');
+        //     return;
+        // }
+        //
+        // // 将HTML转换为Markdown格式
+        // const markdownContent = htmlToMarkdownQuote(messageHTML);
+        //
+        // // 生成新的引用层
+        // const newQuote = generateNewQuoteLayer(messageInfo, markdownContent);
+        //
+        // // 在现有内容后插入引用，并将光标移动到最前面
+        // const success = insertAtEndOfVditorInput(newQuote);
 
         if (success) {
-            console.log(`已添加对 ${messageInfo.displayName || messageInfo.username} 的引用`);
+            //console.log(`已添加对 ${messageInfo.displayName || messageInfo.username} 的引用`);
 
             // 显示成功提示
             showTemporaryHint(`已引用 ${messageInfo.displayName || messageInfo.username} 的消息`);
@@ -1013,6 +1078,7 @@
         return activeInput;
     }
 
+    // 移动光标到最前面并且插入内容
     function insertAtEndOfVditorInput(text) {
         const activeInput = getActiveInput();
         if (!activeInput) return false;
@@ -1197,7 +1263,7 @@
             if (hint.parentNode) {
                 hint.parentNode.removeChild(hint);
             }
-        }, 2000);
+        }, 2500);
     }
 
     // ================== 按钮工厂 ==================
