@@ -657,8 +657,11 @@ window.editButton = function(index) {
                         if (pContent) {
                             markdown += indent + pContent + '\n';
                         } else if(node.childNodes[0] && node.childNodes[0].tagName.toLowerCase() === 'img') {
-                            // 处理图片
-                            markdown += indent + node.innerHTML.trim() + '\n';
+                            // 处理图片，转换为Markdown格式
+                            const imgTag = node.childNodes[0];
+                            const src = imgTag.getAttribute('src') || '';
+                            const alt = imgTag.getAttribute('alt') || '';
+                            markdown += indent + `![${alt}](${src})` + '\n';
                         }
                     } else if (tagName === 'h5') {
                         // 引用标题 - 提取用户名和链接
@@ -683,6 +686,11 @@ window.editButton = function(index) {
                         // 引用块 - 递归处理，增加层级
                         const blockquoteContent = processElement(node, level + 1);
                         markdown += blockquoteContent;
+                    } else if (tagName === 'img') {
+                        // 图片标签，转换为Markdown格式
+                        const src = node.getAttribute('src') || '';
+                        const alt = node.getAttribute('alt') || '';
+                        markdown += indent + `![${alt}](${src})` + '\n';
                     } else if (tagName === 'a' && node.closest('h5') === null) {
                         // 链接（不在h5中的）
                         const href = node.getAttribute('href');
