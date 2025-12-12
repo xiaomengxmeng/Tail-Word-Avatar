@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.17
+// @version      1.0.18
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -16,7 +16,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.17";
+    const version_us = "v1.0.18";
     // 按钮数据结构：{id, textContent, message, className , count, hidden}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
@@ -629,6 +629,80 @@ window.editButton = function(index) {
         
         // 返回内部的HTML，包括嵌套的引用
         return vditorReset.innerHTML;
+    }
+    
+    // 解析消息，将HTML转换为Markdown格式的引用
+    function htmlToMarkdownQuote(html, currentLevel = 0) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+
+        function processElement(element, level) {
+            let markdown = '';
+            const indent = '>'.repeat(level) + (level > 0 ? ' ' : '');
+
+            for (let node of element.childNodes) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    // 文本节点
+                    const text = node.textContent.trim();
+                    if (text) {
+                        markdown += indent + text + '\n';
+                    }
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    // 元素节点
+                    const tagName = node.tagName.toLowerCase();
+
+                    if (tagName === 'p') {
+                        // 段落
+                        const pContent = node.textContent.trim();
+                        if (pContent) {
+                            markdown += indent + pContent + '\n';
+                        } else if(node.childNodes[0] && node.childNodes[0].tagName.toLowerCase() === 'img') {
+                            // 处理图片
+                            markdown += indent + node.innerHTML.trim() + '\n';
+                        }
+                    } else if (tagName === 'h5') {
+                        // 引用标题 - 提取用户名和链接
+                        const userLink = node.querySelector('a[href*="/member/"]');
+                        const backLink = node.querySelector('a[href*="cr#"]');
+
+                        let userText = '';
+                        if (userLink) {
+                            const ariaLabel = userLink.getAttribute('aria-label');
+                            userText = ariaLabel || userLink.textContent;
+                        }
+
+                        let linkText = '';
+                        if (backLink) {
+                            const href = backLink.getAttribute('href');
+                            const title = backLink.getAttribute('title') || '跳转至原消息';
+                            linkText = `[↩](${href} "${title}")`;
+                        }
+
+                        markdown += indent + `##### 引用 @${userText} ${linkText}\n`;
+                    } else if (tagName === 'blockquote') {
+                        // 引用块 - 递归处理，增加层级
+                        const blockquoteContent = processElement(node, level + 1);
+                        markdown += blockquoteContent;
+                    } else if (tagName === 'a' && node.closest('h5') === null) {
+                        // 链接（不在h5中的）
+                        const href = node.getAttribute('href');
+                        const text = node.textContent;
+                        markdown += indent + `[${text}](${href})`;
+                    } else {
+                        // 其他元素，递归处理
+                        markdown += processElement(node, level);
+                    }
+                }
+            }
+
+            if (level === 0 && markdown) {
+                markdown += '\n';
+            }
+
+            return markdown;
+        }
+
+        return processElement(tempDiv, currentLevel);
     }
 
     // 私信接口
@@ -1347,8 +1421,16 @@ window.editButton = function(index) {
             return;
         }
         
+        // 将HTML转换为Markdown格式
+        const markdownContent = htmlToMarkdownQuote(messageHTML);
+        if (!markdownContent) {
+            console.error('无法将HTML转换为Markdown');
+            showNotification('无法转换消息格式', 'error');
+            return;
+        }
+        
         // 发送消息
-        sendMessagesApi([messageHTML])
+        sendMessagesApi([markdownContent])
             .then(() => {
                 showNotification('消息已复读', 'success');
             })
