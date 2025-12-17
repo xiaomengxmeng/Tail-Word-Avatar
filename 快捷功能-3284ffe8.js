@@ -17,6 +17,9 @@
 // 2025-12-5 18 新增 移除小贴士功能
 // 2025-12-5 18 新增 停靠按钮, 允许用户自定义停靠位置或贴边用户信息. !!! 注意, 贴靠时如果边栏消失则插件无法渲染!!!
 // 2025-12-5 18 优化样式, 贴边情况下, 动态排列按钮, 在极窄边框下自动换行
+// 2025-12-12 muli 新增快捷复读按钮，新增快捷父按钮可联动子按钮冷却配置功能（cooldownChildren）
+// 2025-12-14 trd 新增sendIconTextMsg()函数动作 用于发送图标文字
+// 2025-12-15 muli 完善图片消息动作，支持动态配置图片参数
 
 (function () {
     'use strict';
@@ -26,6 +29,16 @@
     const POSITION_STORAGE_KEY = 'fishpi_quick_actions_position';
     const CONFIG_STORAGE_KEY = 'fishpi_quick_actions_config';
     const DEFAULT_POSITION = { x: 20, y: 20 };
+
+    // ================== 获取自己头像(改) ==================
+    let MY_AVATAR = document.querySelector('.avatar-small').style["background-image"];
+    MY_AVATAR = MY_AVATAR.slice(5,MY_AVATAR.length-2);
+    //默认背景色
+    const DEFAULT_ICON_BACKCOLOR = 'D5EBE1,ffffff';
+    //默认字体颜色
+    const DEFAULT_ICON_FONTCOLOR = 'ffffff,fff799,ffffff';
+    // ================== 发送个性化文字图片时的链接模板  ==================
+    let iconText = "![](https://fishpi.cn/gen?ver=0.1&scale=1.5&txt=#{msg}&url=#{avatar}&backcolor=#{backcolor}&fontcolor=#{fontcolor})";
 
     // ================== 动作执行器 ==================
     const ActionExecutor = {
@@ -37,6 +50,29 @@
                     return sendMsg(params);
                 }
                 return Promise.reject('sendMsg参数错误');
+            },
+            sendIconTextMsg: (params) => {
+                if (typeof params === 'string') {
+
+                    return sendIconTextMsg(...params.split('|'));
+                }
+                return Promise.reject('sendIconTextMsg参数错误');
+            },
+            promptAndIconTextMsg: (params) => {
+                new Promise((resolve) => {
+                    const input = prompt('请输入：消息|头像（用户名或图片链接）|背景|字体，参数', '消息|null|null|null');
+                    if (input === null) {
+                        resolve();
+                        return;
+                    }
+                    try {
+
+                        return sendIconTextMsg(...String(input).split('|'));
+                    } catch (err) {
+                        console.error('输入+发送图片消息异常:', err);
+                        resolve();
+                    }
+                });
             },
             muliRefreshPage: (params) => {
                 if (typeof params === 'string') {
@@ -123,6 +159,10 @@
                     return () => fetchPrivate(actionConfig.params);
                 case 'promptAndSend':
                     return () => this.execute(actionConfig);
+                case 'sendIconTextMsg':
+                    return () => sendIconTextMsg(actionConfig.params);
+                case 'promptAndIconTextMsg':
+                    return () => promptAndIconTextMsg(actionConfig.params);
                 case 'customCode':
                     try {
                         return new Function('return ' + actionConfig.params)();
@@ -135,6 +175,7 @@
         }
     };
 
+    //保存所有冷却状态
     function saveAllCooldownStates() {
         const container = document.getElementById('quick-actions');
         if (!container) return;
@@ -280,6 +321,16 @@
                 //复读
                 ChatRoom.repeat(chatId);
             }
+
+            // 提取消息的HTML内容
+            // const messageHTML = extractMessageHTML(chatContent);
+            // // 发送消息（非引用不需要blockquote）
+            // if(!messageHTML.includes('引用 @')) {
+            //     sendMsg(messageHTML.replace(/<blockquote\b[^>]*>(.*?)<\/blockquote>/gis, ''));
+            // } else {
+            //     sendMsg(messageHTML);
+            // }
+
 
 
             // 显示成功提示
@@ -549,8 +600,8 @@
                     cooldown: 5
                 },
                 {
-                    text: "还有谁",
-                    action: { type: 'sendMsg', params: '# 还有谁！！！' },
+                    text: "还有谁icon",
+                    action: { type: 'sendIconTextMsg', params: '还有谁！！！' },
                     cooldown: 5
                 },
                 {
@@ -565,6 +616,11 @@
                 }
             ]
         },
+        {
+            text: "自定义ICON",
+            color: "btn-blue",
+            action: { type: 'promptAndIconTextMsg'},
+        },
     ];
 
     // 最终使用的配置
@@ -574,6 +630,47 @@
     let activeConfig = [];
 
     // ================== API函数 ==================
+
+    /**
+     * 发送图片消息
+     * msg 消息
+     * avatar 头像地址
+     * backcolor 背景颜色
+     * fontcolor 文字颜色
+     *
+     * */
+    function sendIconTextMsg(msg, avatar, backcolor, fontcolor){
+        if (!msg || msg == null || avatar === 'null') {
+            msg = '沐里天下第一！！！';
+        }
+        if (!avatar || avatar == null || avatar === 'null') {
+            //默认自己头像
+            avatar = MY_AVATAR;
+        } else {
+            //先尝试当前页面寻找用户
+            const avatarDiv = document.querySelector('#comments div[aria-label="' + avatar + '"]');
+            if (avatarDiv) {
+                avatar = avatarDiv.style["background-image"];
+                avatar = avatar.slice(5,avatar.length-2);
+            }
+        }
+        if (!backcolor || backcolor == null || backcolor === 'null') {
+            //默认背景颜色
+            backcolor = DEFAULT_ICON_BACKCOLOR;
+        }
+        if (!fontcolor || fontcolor == null || fontcolor === 'null') {
+            //默认文字颜色
+            fontcolor = DEFAULT_ICON_FONTCOLOR;
+        }
+        //替换文字(创建一个新的对象)
+        var thisIconText = String(iconText);
+        thisIconText = thisIconText.replace("#{msg}", msg);
+        thisIconText = thisIconText.replace("#{avatar}", avatar);
+        thisIconText = thisIconText.replace("#{backcolor}", backcolor);
+        thisIconText = thisIconText.replace("#{fontcolor}", fontcolor);
+        //发送消息
+        sendMsg(thisIconText);
+    }
     function sendMsg(msg) {
         if (Array.isArray(msg)) {
             var list = [];
@@ -595,6 +692,7 @@
 
     }
 
+    //私信接口
     function fetchPrivate(endpoint) {
         return fetch(`${location.origin}${endpoint}?apiKey=${Label.node.apiKey}`);
     }
@@ -620,6 +718,7 @@
         }, delay);
     }
 
+    //刷新页面的提示
     function muliShowToast(message, duration = 2000, type = 'info') {
         const oldToast = document.getElementById('muli-toast');
         if (oldToast) oldToast.remove();
@@ -860,90 +959,6 @@
         };
     }
 
-    // 提取消息的HTML内容（包括嵌套引用）
-    function extractMessageHTML(chatContent) {
-        const vditorReset = chatContent.querySelector('.vditor-reset');
-        if (!vditorReset) return null;
-
-        // 返回内部的HTML，包括嵌套的引用
-        return vditorReset.innerHTML;
-    }
-
-    // 将HTML转换为Markdown格式的引用
-    function htmlToMarkdownQuote(html, currentLevel = 0) {
-        // 创建一个临时元素来解析HTML
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
-
-        // 递归处理元素
-        function processElement(element, level) {
-            let markdown = '';
-            const indent = '>'.repeat(level) + (level > 0 ? ' ' : '');
-
-            // 遍历所有子节点
-            for (let node of element.childNodes) {
-                if (node.nodeType === Node.TEXT_NODE) {
-                    // 文本节点
-                    const text = node.textContent.trim();
-                    if (text) {
-                        markdown += indent + text + '\n';
-                    }
-                } else if (node.nodeType === Node.ELEMENT_NODE) {
-                    // 元素节点
-                    const tagName = node.tagName.toLowerCase();
-
-                    if (tagName === 'p') {
-                        // 段落
-                        const pContent = node.textContent.trim();
-                        if (pContent) {
-                            markdown += indent + pContent + '\n';
-                        }
-                    } else if (tagName === 'h5') {
-                        // 引用标题 - 提取用户名和链接
-                        const userLink = node.querySelector('a[href*="/member/"]');
-                        const backLink = node.querySelector('a[href*="cr#"]');
-
-                        let userText = '';
-                        if (userLink) {
-                            const ariaLabel = userLink.getAttribute('aria-label');
-                            userText = ariaLabel || userLink.textContent;
-                        }
-
-                        let linkText = '';
-                        if (backLink) {
-                            const href = backLink.getAttribute('href');
-                            const title = backLink.getAttribute('title') || '跳转至原消息';
-                            linkText = `[↩](${href} "${title}")`;
-                        }
-
-                        markdown += indent + `##### 引用 @${userText} ${linkText}\n`;
-                    } else if (tagName === 'blockquote') {
-                        // 引用块 - 递归处理，增加层级
-                        const blockquoteContent = processElement(node, level + 1);
-                        markdown += blockquoteContent;
-                    } else if (tagName === 'a' && node.closest('h5') === null) {
-                        // 链接（不在h5中的）
-                        const href = node.getAttribute('href');
-                        const text = node.textContent;
-                        markdown += indent + `[${text}](${href})`;
-                    } else {
-                        // 其他元素，递归处理
-                        markdown += processElement(node, level);
-                    }
-                }
-            }
-
-            // 如果不是根元素，添加空行分隔
-            if (level === 0 && markdown) {
-                markdown += '\n';
-            }
-
-            return markdown;
-        }
-
-        return processElement(tempDiv, currentLevel);
-    }
-
     // 生成新的引用层（在内容下方添加引用）
     function generateNewQuoteLayer(messageInfo, innerContent) {
         const { displayName, username, messageId } = messageInfo;
@@ -1051,54 +1066,6 @@
     }
 
     // ================== 输入框操作函数 ==================
-    function getActiveInput() {
-        const chatContent = document.getElementById('chatContent');
-        if (!chatContent) return null;
-
-        let activeInput = null;
-        const irInput = chatContent.querySelector('.vditor-ir .vditor-reset[contenteditable="true"]');
-        if (irInput && irInput.offsetParent) {
-            activeInput = irInput;
-        }
-
-        if (!activeInput) {
-            const wysiwygInput = chatContent.querySelector('.vditor-wysiwyg .vditor-reset[contenteditable="true"]');
-            if (wysiwygInput && wysiwygInput.offsetParent) {
-                activeInput = wysiwygInput;
-            }
-        }
-
-        if (!activeInput) {
-            const svInput = chatContent.querySelector('.vditor-sv .vditor-reset[contenteditable="true"]');
-            if (svInput && svInput.offsetParent) {
-                activeInput = svInput;
-            }
-        }
-
-        return activeInput;
-    }
-
-    // 移动光标到最前面并且插入内容
-    function insertAtEndOfVditorInput(text) {
-        const activeInput = getActiveInput();
-        if (!activeInput) return false;
-
-        const currentContent = activeInput.textContent || '';
-        const newContent = currentContent + text;
-        activeInput.textContent = newContent;
-        activeInput.focus();
-
-        const range = document.createRange();
-        const selection = window.getSelection();
-        range.setStart(activeInput, 0);
-        range.setEnd(activeInput, 0);
-        selection.removeAllRanges();
-        selection.addRange(range);
-
-        const inputEvent = new Event('input', { bubbles: true });
-        activeInput.dispatchEvent(inputEvent);
-        return true;
-    }
 
     function insertToVditorInput(text) {
         const activeInput = getActiveInput();
@@ -1144,36 +1111,46 @@
         return { messageId, username, displayName };
     }
 
+    // 提取消息的HTML内容（包括嵌套引用）
     function extractMessageHTML(chatContent) {
         const vditorReset = chatContent.querySelector('.vditor-reset');
-        return vditorReset ? vditorReset.innerHTML : null;
+        if (!vditorReset) return null;
+
+        // 返回内部的HTML，包括嵌套的引用
+        return vditorReset.innerHTML;
     }
     // 解析消息
+    // 将HTML转换为Markdown格式的引用
     function htmlToMarkdownQuote(html, currentLevel = 0) {
+        // 创建一个临时元素来解析HTML
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
 
+        // 递归处理元素
         function processElement(element, level) {
             let markdown = '';
             const indent = '>'.repeat(level) + (level > 0 ? ' ' : '');
 
+            // 遍历所有子节点
             for (let node of element.childNodes) {
                 if (node.nodeType === Node.TEXT_NODE) {
+                    // 文本节点
                     const text = node.textContent.trim();
                     if (text) {
                         markdown += indent + text + '\n';
                     }
                 } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    // 元素节点
                     const tagName = node.tagName.toLowerCase();
 
                     if (tagName === 'p') {
+                        // 段落
                         const pContent = node.textContent.trim();
                         if (pContent) {
                             markdown += indent + pContent + '\n';
-                        } else if(node.childNodes[0] && node.childNodes[0].tagName.toLowerCase() === 'img') {
-                            markdown += indent + node.innerHTML.trim() + '\n';
                         }
                     } else if (tagName === 'h5') {
+                        // 引用标题 - 提取用户名和链接
                         const userLink = node.querySelector('a[href*="/member/"]');
                         const backLink = node.querySelector('a[href*="cr#"]');
 
@@ -1192,18 +1169,22 @@
 
                         markdown += indent + `##### 引用 @${userText} ${linkText}\n`;
                     } else if (tagName === 'blockquote') {
+                        // 引用块 - 递归处理，增加层级
                         const blockquoteContent = processElement(node, level + 1);
                         markdown += blockquoteContent;
                     } else if (tagName === 'a' && node.closest('h5') === null) {
+                        // 链接（不在h5中的）
                         const href = node.getAttribute('href');
                         const text = node.textContent;
                         markdown += indent + `[${text}](${href})`;
                     } else {
+                        // 其他元素，递归处理
                         markdown += processElement(node, level);
                     }
                 }
             }
 
+            // 如果不是根元素，添加空行分隔
             if (level === 0 && markdown) {
                 markdown += '\n';
             }
@@ -1227,44 +1208,6 @@
         return `\n\n##### 引用 @${quotedUser} [↩](${link} "跳转至原消息")\n\n${quotedContent}\n`;
     }
 
-    function showTemporaryHint(message) {
-        const hint = document.createElement('div');
-        hint.textContent = message;
-        hint.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 4px;
-            z-index: 10000;
-            font-size: 14px;
-            animation: fadeInOut 2s ease-in-out;
-        `;
-
-        if (!document.querySelector('#hint-animation-style')) {
-            const style = document.createElement('style');
-            style.id = 'hint-animation-style';
-            style.textContent = `
-                @keyframes fadeInOut {
-                    0% { opacity: 0; transform: translateY(-10px); }
-                    10% { opacity: 1; transform: translateY(0); }
-                    90% { opacity: 1; transform: translateY(0); }
-                    100% { opacity: 0; transform: translateY(-10px); }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-
-        document.body.appendChild(hint);
-
-        setTimeout(() => {
-            if (hint.parentNode) {
-                hint.parentNode.removeChild(hint);
-            }
-        }, 2500);
-    }
 
     // ================== 按钮工厂 ==================
     const buttonFactory = {
@@ -1625,28 +1568,6 @@
                     }, 1000);
                 } else {
                     localStorage.removeItem(cooldownKey);
-                }
-            }
-        });
-    }
-
-    function saveAllCooldownStates() {
-        const container = document.getElementById('quick-actions');
-        if (!container) return;
-
-        const coolingButtons = container.querySelectorAll('.cr-btn.cooldown, .sub-btn.cooldown');
-
-        coolingButtons.forEach(btn => {
-            const buttonId = btn.dataset.buttonId;
-            if (!buttonId) return;
-
-            const match = btn.textContent.match(/\((\d+)s\)/);
-            if (match && match[1]) {
-                const remainingSeconds = parseInt(match[1]);
-                if (remainingSeconds > 0) {
-                    const endTime = Date.now() + (remainingSeconds * 1000);
-                    const cooldownKey = `${COOLDOWN_STORAGE_PREFIX}${buttonId}`;
-                    localStorage.setItem(cooldownKey, endTime.toString());
                 }
             }
         });
@@ -2539,6 +2460,14 @@
                 { name: 'message', type: 'text', label: '消息内容（多条逗号隔开）', required: true }
             ]
         },
+        sendIconTextMsg: {
+            params: [
+                { name: 'message', type: 'text', label: '消息|头像|背景|字体（|隔开参数，null为使用默认参数）', required: true }
+            ]
+        },
+        promptAndIconTextMsg: {
+            params: []
+        },
         muliRefreshPage: {
             params: [
                 { name: 'message', type: 'text', label: '刷新提示消息', required: false },
@@ -2971,6 +2900,8 @@
             <select class="form-input" name="actionType">
                 <option value="">无</option>
                 <option value="sendMsg" ${button.action?.type === 'sendMsg' ? 'selected' : ''}>发送消息</option>
+                <option value="sendIconTextMsg" ${button.action?.type === 'sendIconTextMsg' ? 'selected' : ''}>发送图标文字消息</option>
+                <option value="promptAndIconTextMsg" ${button.action?.type === 'promptAndIconTextMsg' ? 'selected' : ''}>自定义发送图标文字消息</option>
                 <option value="promptAndSend" ${button.action?.type === 'promptAndSend' ? 'selected' : ''}>输入框+发送</option>
                 <option value="fetchPrivate" ${button.action?.type === 'fetchPrivate' ? 'selected' : ''}>调用私信API</option>
 
@@ -3091,6 +3022,8 @@
                 <select class="form-input" name="actionType">
                     <option value="">无</option>
                     <option value="sendMsg" ${childData.action?.type === 'sendMsg' ? 'selected' : ''}>发送消息</option>
+                    <option value="sendIconTextMsg" ${childData.action?.type === 'sendIconTextMsg' ? 'selected' : ''}>发送图标文字消息</option>
+                    <option value="promptAndIconTextMsg" ${childData.action?.type === 'promptAndIconTextMsg' ? 'selected' : ''}>自定义发送图标文字消息</option>
                     <option value="promptAndSend" ${childData.action?.type === 'promptAndSend' ? 'selected' : ''}>输入框+发送</option>
                     <option value="fetchPrivate" ${childData.action?.type === 'fetchPrivate' ? 'selected' : ''}>调用私信API</option>
                 </select>
@@ -3263,7 +3196,7 @@
                 params[name] = element.value;
             });
 
-            if (actionType === 'sendMsg' && params.message) {
+            if ((actionType === 'sendMsg' || actionType === 'sendIconTextMsg') && params.message) {
                 activeConfig[index].action.params = params.message;
             } else if (actionType === 'muliRefreshPage') {
                 activeConfig[index].action.params = params.message || null;
@@ -3306,7 +3239,7 @@
                     childParams[name] = element.value;
                 });
 
-                if (childActionType === 'sendMsg' && childParams.message) {
+                if ((childCooldown === 'sendMsg' || childCooldown === 'sendIconTextMsg') && childParams.message) {
                     childData.action.params = childParams.message;
                 } else if (Object.keys(childParams).length > 0) {
                     childData.action.params = childParams;
@@ -3795,6 +3728,9 @@
                     } else {
                         buttonData.action.params = message;
                     }
+                } else if (actionType === 'sendIconTextMsg') {
+                    var message = form.querySelector('[name="action_message"]')?.value;
+                    buttonData.action.params = message;
                 } else if (actionType === 'promptAndSend') {
                     const promptText = form.querySelector('[name="action_promptText"]')?.value;
                     const defaultValue = form.querySelector('[name="action_defaultValue"]')?.value;
@@ -3850,6 +3786,9 @@
                             } else {
                                 childData.action.params = message;
                             }
+                        } else if (childActionType === 'sendIconTextMsg') {
+                            var message = childForm.querySelector('[name="action_message"]')?.value;
+                            childData.action.params = message;
                         } else if (childActionType === 'promptAndSend') {
                             const promptText = childForm.querySelector('[name="action_promptText"]')?.value;
                             const defaultValue = childForm.querySelector('[name="action_defaultValue"]')?.value;

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         鱼派小尾巴和单词功能
 // @namespace    http://tampermonkey.net/
-// @version      1.0.6
+// @version      1.0.7
 // @description  整合小尾巴和单词功能的精简版脚本   try to thank APTX-4869!
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -13,19 +13,22 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.6";
+    const version_us = "v1.0.7";
 
     // 小尾巴开关状态
     var suffixFlag = window.localStorage['xwb_flag'] ? JSON.parse(window.localStorage['xwb_flag']) : true;
 
-    // 输出单词数量设置（默认为5）
-    var wordCount = window.localStorage['xwb_tail_word_count'] ? parseInt(window.localStorage['xwb_tail_word_count']) : 5;
+    // 输出单词数量设置（默认为1）
+    var wordCount = window.localStorage['xwb_tail_word_count'] ? parseInt(window.localStorage['xwb_tail_word_count']) : 1;
     // 左侧显示单词数量设置（默认为5）
     var sideWordCount = window.localStorage['xwb_side_word_count'] ? parseInt(window.localStorage['xwb_side_word_count']) : 5;
 
 
     // 设置面板状态
     let settingsPanelVisible = false;
+    
+    // 单词面板可见性状态
+    let wordPanelVisible = window.localStorage['xwb_word_panel_visible'] ? JSON.parse(window.localStorage['xwb_word_panel_visible']) : true;
 
     // 创建设置面板
     function createSettingsPanel() {
@@ -390,6 +393,7 @@
         `;
         sideWordCountDiv.appendChild(sideWordCountInput);
         wordSection.appendChild(sideWordCountDiv);
+
         
         // 单词面板风格
         const styleTitle = document.createElement('div');
@@ -784,8 +788,36 @@
         }
     }
 
+    // 切换单词面板显示/隐藏
+    function toggleWordPanel(show) {
+        // 如果没有提供参数，则切换当前状态
+        wordPanelVisible = show !== undefined ? show : !wordPanelVisible;
+        
+        // 保存状态到localStorage
+        window.localStorage.setItem('xwb_word_panel_visible', JSON.stringify(wordPanelVisible));
+        
+        const wordDisplayArea = document.getElementById('wordDisplayArea');
+        
+        if (wordPanelVisible) {
+            // 如果需要显示但面板不存在，则创建面板
+            if (!wordDisplayArea) {
+                const newPanel = getOrCreateWordDisplayArea();
+                initializeWordDisplay();
+            } else {
+                // 如果面板存在，显示它
+                wordDisplayArea.style.display = 'block';
+            }
+        } else {
+            // 如果需要隐藏且面板存在，则移除它
+            if (wordDisplayArea) {
+                wordDisplayArea.remove();
+            }
+        }
+    }
+    
     // 替换原有菜单系统，添加统一的设置按钮
     GM_registerMenuCommand("设置小尾巴和单词面板", showSettingsPanel);
+    GM_registerMenuCommand("切换单词面板显示", toggleWordPanel);
 
     // 创建或获取左侧聊天区外的单词显示区域
     function getOrCreateWordDisplayArea() {
@@ -802,7 +834,7 @@
                 'font-family: Arial, sans-serif; font-size: 12px;';
 
             wordDisplayArea.style.cssText = cssText;
-            wordDisplayArea.innerHTML = '<div style="cursor: move; padding: 3px; text-align: center; font-weight: bold;">单词学习</div><div id="wordContent">暂无单词</div><div style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; cursor: nwse-resize; background-color: transparent; border-right: 3px solid #dee2e6; border-bottom: 3px solid #dee2e6;"></div>';
+            wordDisplayArea.innerHTML = '<div style="cursor: move; padding: 3px; text-align: center; font-weight: bold; display: flex; justify-content: space-between; align-items: center;"><span>单词学习</span><button id="wordPanelCloseBtn" style="background: transparent; border: none; cursor: pointer; font-size: 14px; color: inherit; padding: 0; margin: 0; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;">×</button></div><div id="wordContent">暂无单词</div><div style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; cursor: nwse-resize; background-color: transparent; border-right: 3px solid #dee2e6; border-bottom: 3px solid #dee2e6;"></div>';
             document.body.appendChild(wordDisplayArea);
 
             // 添加拖拽功能
@@ -835,6 +867,15 @@
 
             // 应用保存的样式
             applyWordPanelStyle(getCurrentStyleIndex());
+            
+            // 添加关闭按钮事件监听
+            const closeBtn = wordDisplayArea.querySelector('#wordPanelCloseBtn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // 阻止触发拖拽
+                    toggleWordPanel(false);
+                });
+            }
         }
 
         return wordDisplayArea;
