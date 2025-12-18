@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         鱼派小尾巴和单词功能
 // @namespace    http://tampermonkey.net/
-// @version      1.0.7
+// @version      1.0.8
 // @description  整合小尾巴和单词功能的精简版脚本   try to thank APTX-4869!
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -13,7 +13,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.7";
+    const version_us = "v1.0.8";
 
     // 小尾巴开关状态
     var suffixFlag = window.localStorage['xwb_flag'] ? JSON.parse(window.localStorage['xwb_flag']) : true;
@@ -968,6 +968,9 @@
 
     // 更新单词显示
     function updateWordDisplay(wordList) {
+        if (!wordPanelVisible) {
+            return;
+        }
         const wordDisplayArea = getOrCreateWordDisplayArea();
         const wordContent = wordDisplayArea.querySelector('#wordContent');
 
@@ -1032,13 +1035,15 @@
 
     // 初始化时立即更新一次单词
     function initializeWordDisplay() {
-        try {
-            // 获取随机单词并更新显示
-            const wordList = getRandomUniqueWords(sideWordCount);
-            updateWordDisplay(wordList);
-        } catch (e) {
-            // 如果初始化失败，延迟重试
-            setTimeout(initializeWordDisplay, 1000);
+        if (wordPanelVisible) {
+            try {
+                // 获取随机单词并更新显示
+                const wordList = getRandomUniqueWords(sideWordCount);
+                updateWordDisplay(wordList);
+            } catch (e) {
+                // 如果初始化失败，延迟重试
+                setTimeout(initializeWordDisplay, 1000);
+            }
         }
     }
 
@@ -1064,7 +1069,7 @@
 
     // 重写发送消息函数，添加小尾巴和考研单词功能
     ChatRoom.send = function (needwb) {
-        var wbMsg = '\n\n\n>  ' + getCurrentSuffixText();
+        // 先定义基础的wbMsg，后续在content函数中根据情况处理小尾巴
         // 获取指定数量的不重复随机单词
         const wordList = getRandomUniqueWords(wordCount);
 
@@ -1140,13 +1145,17 @@
                     content: function () {
                         // 获取原始消息内容
                         let originalContent = t;
+                        // 获取当前小尾巴文本
+                        let currentSuffix = getCurrentSuffixText();
 
                         // 处理小尾巴和单词
-                        if (t.trim().length == 0 || (!suffixFlag) || needwb == 0 || t.trim().startsWith('凌 ') || t.trim().startsWith('鸽 ') || t.trim().startsWith('小冰 ') || t.trim().startsWith('冰冰 ') || t.trim().startsWith('点歌 ') || t.trim().startsWith('TTS ') || t.trim().startsWith('朗读 ')) {
+                        if (t.trim().length == 0 || (!suffixFlag) || needwb == 0 || t.trim().startsWith('凌 ') || t.trim().startsWith('鸽 ') || t.trim().startsWith('小冰 ') || t.trim().startsWith('冰冰 ') || t.trim().startsWith('点歌 ') || t.trim().startsWith('TTS ') || t.trim().startsWith('朗读 ') || originalContent.includes(currentSuffix)) {
                             return originalContent;
                         } else if (wordCount === 0) {
-                            return originalContent + '\n\n\n>  ' + getCurrentSuffixText();
+                            return originalContent + '\n\n\n>  ' + currentSuffix;
                         } else {
+                            // 定义包含小尾巴的wbMsg
+                            var wbMsg = '\n\n\n>  ' + currentSuffix;
                             return originalContent + wordMsg + wbMsg;
                         }
                     }(),
