@@ -1145,6 +1145,11 @@
                     content: function () {
                         // 获取原始消息内容
                         let originalContent = t;
+                        
+                        // 移除原始消息中所有符合小尾巴格式的内容
+                        // 小尾巴格式：\n\n\n>  小尾巴内容
+                        originalContent = originalContent.replace(/\n\n\n>  .*/g, '');
+                        
                         // 获取当前小尾巴文本
                         let currentSuffix = getCurrentSuffixText();
 
