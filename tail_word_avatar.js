@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         鱼派小尾巴和单词功能
 // @namespace    http://tampermonkey.net/
-// @version      1.0.8
+// @version      1.0.10
 // @description  整合小尾巴和单词功能的精简版脚本   try to thank APTX-4869!
 // @author       ZeroDream
 // @match        https://fishpi.cn/*
@@ -13,7 +13,7 @@
 
 (function () {
     'use strict';
-    const version_us = "v1.0.8";
+    const version_us = "v1.0.10";
 
     // 小尾巴开关状态
     var suffixFlag = window.localStorage['xwb_flag'] ? JSON.parse(window.localStorage['xwb_flag']) : true;
@@ -1146,15 +1146,39 @@
                         // 获取原始消息内容
                         let originalContent = t;
                         
-                        // 移除原始消息中所有符合小尾巴格式的内容
-                        // 小尾巴格式：\n\n\n>  小尾巴内容
-                        originalContent = originalContent.replace(/\n\n\n>  .*/g, '');
+                        // 替换为与快捷功能相同的小尾巴处理逻辑
+                        let strOriginalContent = String(originalContent);
+                        // 小尾巴固定关键字
+                        const wb_keyword = '\n\n> ';
+                        // 区别小尾巴固定关键字的引用关键字
+                        const tab_keyword = '"跳转至原消息")';
+                        
+                        // 复读之替换别人的小尾巴（太邪恶了）
+                        if (strOriginalContent.includes(wb_keyword)) {
+                            var wbEnd = strOriginalContent.lastIndexOf(wb_keyword);
+                            var wbStartMsg = strOriginalContent.substring(0, wbEnd);
+                            //如果是双击引用 则改为截取最后正确的小尾巴部分
+                            if (wbStartMsg.includes(tab_keyword) && (wbStartMsg.lastIndexOf(tab_keyword) + tab_keyword.length) == wbStartMsg.length) {
+                                //探寻到引用的末端 检查是否出现两个引用层级
+                                var tabEnd = strOriginalContent.lastIndexOf(tab_keyword);
+                                var tabEndStr = strOriginalContent.substring(tabEnd + tab_keyword.length);
+                                if(tabEndStr.lastIndexOf('> ') == tabEndStr.indexOf('> ')) {
+                                    //说明是最后一个层级
+                                    // 不去除小尾巴
+                                    wbStartMsg = strOriginalContent;
+                                } else {
+                                    wbStartMsg = strOriginalContent.substring(0, strOriginalContent.lastIndexOf('> '));
+                                }
+                            }
+                            //截取原消息
+                            originalContent = wbStartMsg;
+                        }
                         
                         // 获取当前小尾巴文本
                         let currentSuffix = getCurrentSuffixText();
 
                         // 处理小尾巴和单词
-                        if (t.trim().length == 0 || (!suffixFlag) || needwb == 0 || t.trim().startsWith('凌 ') || t.trim().startsWith('鸽 ') || t.trim().startsWith('小冰 ') || t.trim().startsWith('冰冰 ') || t.trim().startsWith('点歌 ') || t.trim().startsWith('TTS ') || t.trim().startsWith('朗读 ') || originalContent.includes(currentSuffix)) {
+                        if (t.trim().length == 0 || (!suffixFlag) || needwb == 0 || t.trim().startsWith('凌 ') || t.trim().startsWith('鸽 ') || t.trim().startsWith('小冰 ') || t.trim().startsWith('冰冰 ') || t.trim().startsWith('点歌 ') || t.trim().startsWith('TTS ') || t.trim().startsWith('朗读 ') || strOriginalContent.includes(currentSuffix)) {
                             return originalContent;
                         } else if (wordCount === 0) {
                             return originalContent + '\n\n\n>  ' + currentSuffix;

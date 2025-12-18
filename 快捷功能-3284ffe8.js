@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         鱼派快捷功能cr1
-// @version      2.0
+// @version      2.1
 // @description  快捷操作，支持拖拽和记忆位置，支持配置编辑
 // @author       Kirito + muli + 18
 // @match        https://fishpi.cn/cr
 // @grant        GM_addStyle
 // @grant        GM_notification
+// @grant        GM_registerMenuCommand
 // ==/UserScript==
 // 2025-12-1 muli 优化按钮布局，三个自动换行，并添加回到顶部按钮
 // 2025-12-2 muli 按钮支持配置子级按钮（目前只支持到第二层），Alt + Enter才触发发送按钮，保留Enter换行的行为，添加muliRefresh配置，可控制触发按钮后是否刷新页面
@@ -20,6 +21,7 @@
 // 2025-12-12 muli 新增快捷复读按钮，新增快捷父按钮可联动子按钮冷却配置功能（cooldownChildren）
 // 2025-12-14 trd 新增sendIconTextMsg()函数动作 用于发送图标文字
 // 2025-12-15 muli 完善图片消息动作，支持动态配置图片参数
+// 2025-12-18 muli 新增小尾巴设置（来源小梦的魔法）
 
 (function () {
     'use strict';
@@ -34,11 +36,339 @@
     let MY_AVATAR = document.querySelector('.avatar-small').style["background-image"];
     MY_AVATAR = MY_AVATAR.slice(5,MY_AVATAR.length-2);
     //默认背景色
-    const DEFAULT_ICON_BACKCOLOR = 'D5EBE1,ffffff';
+    const DEFAULT_ICON_BACKCOLOR = '9a808f,ffffff';
     //默认字体颜色
-    const DEFAULT_ICON_FONTCOLOR = 'ffffff,fff799,ffffff';
+    const DEFAULT_ICON_FONTCOLOR = 'ffffff,9a808f,9a808f';
     // ================== 发送个性化文字图片时的链接模板  ==================
     let iconText = "![](https://fishpi.cn/gen?ver=0.1&scale=1.5&txt=#{msg}&url=#{avatar}&backcolor=#{backcolor}&fontcolor=#{fontcolor})";
+
+    const version_us = "v2.1.0";
+
+    // 小尾巴开关状态
+    var suffixFlag = window.localStorage['xwb_flag'] ? JSON.parse(window.localStorage['xwb_flag']) : true;
+
+    // 设置面板状态
+    let settingsPanelVisible = false;
+
+    // 小尾巴固定关键字
+    const wb_keyword = '\n\n> ';
+    // 区别小尾巴固定关键字的引用关键字
+    const tab_keyword = '\"跳转至原消息\")';
+
+    // 创建设置面板
+    function createSettingsPanel() {
+        // 检查是否已存在面板
+        const existingPanel = document.getElementById('tail-word-settings-panel');
+        if (existingPanel) {
+            return existingPanel;
+        }
+
+        // 创建面板容器
+        const panel = document.createElement('div');
+        panel.id = 'tail-word-settings-panel';
+        panel.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 16px;
+            padding: 0;
+            z-index: 10000;
+            width: 550px;
+            max-height: 80vh;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        `;
+
+        // 创建可拖动的标题栏
+        const titleBar = document.createElement('div');
+        titleBar.style.cssText = `
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px 12px 0 0;
+            cursor: move;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        `;
+
+        // 面板标题
+        const title = document.createElement('h3');
+        title.textContent = '小尾巴和单词头像设置';
+        title.style.margin = '0';
+        title.style.fontSize = '18px';
+        title.style.fontWeight = '600';
+        titleBar.appendChild(title);
+
+        // 标题栏关闭按钮
+        const titleCloseBtn = document.createElement('button');
+        titleCloseBtn.innerHTML = '×';
+        titleCloseBtn.style.cssText = `
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease;
+        `;
+
+        titleCloseBtn.onclick = function() {
+            hideSettingsPanel();
+        };
+
+        titleCloseBtn.addEventListener('mouseenter', () => {
+            titleCloseBtn.style.background = 'rgba(255, 255, 255, 0.3)';
+        });
+
+        titleCloseBtn.addEventListener('mouseleave', () => {
+            titleCloseBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+        });
+
+        titleBar.appendChild(titleCloseBtn);
+        panel.appendChild(titleBar);
+
+        // 创建内容容器
+        const contentContainer = document.createElement('div');
+        contentContainer.style.cssText = `
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        `;
+        panel.appendChild(contentContainer);
+
+        // 添加小尾巴设置区域
+        const suffixSection = document.createElement('div');
+        suffixSection.style.cssText = `
+            background: #fafafa;
+            border: 2px dashed #e1e5e9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        `;
+
+        suffixSection.addEventListener('mouseenter', () => {
+            suffixSection.style.borderColor = '#667eea';
+            suffixSection.style.background = '#f0f2ff';
+        });
+
+        suffixSection.addEventListener('mouseleave', () => {
+            suffixSection.style.borderColor = '#e1e5e9';
+            suffixSection.style.background = '#fafafa';
+        });
+
+        const suffixTitle = document.createElement('h4');
+        suffixTitle.textContent = '小尾巴设置';
+        suffixTitle.style.marginTop = '0';
+        suffixTitle.style.marginBottom = '20px';
+        suffixTitle.style.color = '#333';
+        suffixTitle.style.fontSize = '16px';
+        suffixSection.appendChild(suffixTitle);
+
+        // 小尾巴开关
+        const suffixToggleDiv = document.createElement('div');
+        suffixToggleDiv.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        `;
+
+        const suffixToggleLabel = document.createElement('label');
+        suffixToggleLabel.textContent = '启用小尾巴';
+        suffixToggleLabel.style.fontWeight = '500';
+        suffixToggleLabel.style.color = '#555';
+
+        const suffixToggle = document.createElement('input');
+        suffixToggle.type = 'checkbox';
+        suffixToggle.checked = suffixFlag;
+        suffixToggle.id = 'suffix-toggle';
+        suffixToggle.style.cssText = `
+            width: 40px;
+            height: 20px;
+            cursor: pointer;
+        `;
+
+        suffixToggleDiv.appendChild(suffixToggleLabel);
+        suffixToggleDiv.appendChild(suffixToggle);
+        suffixSection.appendChild(suffixToggleDiv);
+
+        // 小尾巴预设选择
+        const presetTitle = document.createElement('div');
+        presetTitle.textContent = '预设小尾巴';
+        presetTitle.style.marginBottom = '10px';
+        presetTitle.style.fontWeight = '500';
+        presetTitle.style.color = '#555';
+        suffixSection.appendChild(presetTitle);
+
+        const presetSelect = document.createElement('select');
+        presetSelect.id = 'suffix-preset-select';
+        presetSelect.style.cssText = `
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 20px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+        `;
+
+        suffixOptions.forEach((option, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.textContent = option;
+            presetSelect.appendChild(opt);
+        });
+
+        // 设置当前选中的预设
+        const currentIndex = getCurrentSuffixIndex();
+        const isCustom = window.localStorage['xwb_is_custom_suffix'] === 'true';
+        if (!isCustom) {
+            presetSelect.value = currentIndex;
+        }
+
+        suffixSection.appendChild(presetSelect);
+
+        // 自定义小尾巴输入
+        const customTitle = document.createElement('div');
+        customTitle.textContent = '自定义小尾巴';
+        customTitle.style.marginBottom = '10px';
+        customTitle.style.fontWeight = '500';
+        customTitle.style.color = '#555';
+        suffixSection.appendChild(customTitle);
+
+        const customInput = document.createElement('textarea');
+        customInput.id = 'custom-suffix-input';
+        customInput.placeholder = '请输入自定义小尾巴...';
+        customInput.rows = 3;
+        customInput.value = window.localStorage['xwb_custom_suffix'] || '';
+        customInput.style.cssText = `
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 20px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+            resize: vertical;
+            transition: all 0.3s ease;
+            outline: none;
+        `;
+        suffixSection.appendChild(customInput);
+
+        // 自定义开关
+        const customToggleDiv = document.createElement('div');
+        customToggleDiv.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        `;
+
+        const customToggleLabel = document.createElement('label');
+        customToggleLabel.textContent = '使用自定义小尾巴';
+        customToggleLabel.style.fontWeight = '500';
+        customToggleLabel.style.color = '#555';
+
+        const customToggle = document.createElement('input');
+        customToggle.type = 'checkbox';
+        customToggle.checked = isCustom;
+        customToggle.id = 'custom-suffix-toggle';
+        customToggle.style.cssText = `
+            width: 40px;
+            height: 20px;
+            cursor: pointer;
+        `;
+
+        customToggleDiv.appendChild(customToggleLabel);
+        customToggleDiv.appendChild(customToggle);
+        suffixSection.appendChild(customToggleDiv);
+
+        // 当前预览
+        const previewTitle = document.createElement('div');
+        previewTitle.textContent = '当前预览';
+        previewTitle.style.marginBottom = '10px';
+        previewTitle.style.fontWeight = '500';
+        previewTitle.style.color = '#555';
+        suffixSection.appendChild(previewTitle);
+
+        const previewDiv = document.createElement('div');
+        previewDiv.id = 'suffix-preview';
+        previewDiv.style.cssText = `
+            background: #f0f2ff;
+            border: 1px solid #667eea;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-style: italic;
+            color: #333;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        `;
+        previewDiv.textContent = getCurrentSuffixText();
+        suffixSection.appendChild(previewDiv);
+
+        contentContainer.appendChild(suffixSection);
+
+
+
+        // 添加保存按钮
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = '保存设置';
+        saveBtn.style.cssText = `
+            width: 100%;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            margin-top: 20px;
+        `;
+
+        saveBtn.addEventListener('mouseenter', () => {
+            saveBtn.style.transform = 'translateY(-2px)';
+            saveBtn.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+        });
+
+        saveBtn.addEventListener('mouseleave', () => {
+            saveBtn.style.transform = 'translateY(0)';
+            saveBtn.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)';
+        });
+
+        saveBtn.onclick = saveSettings;
+        contentContainer.appendChild(saveBtn);
+
+        // 添加到页面
+        document.body.appendChild(panel);
+
+        // 添加事件监听
+        addSettingsEventListeners();
+
+        return panel;
+    }
 
     // ================== 动作执行器 ==================
     const ActionExecutor = {
@@ -363,9 +693,9 @@
         mutations.forEach((mutation) => {
             mutation.addedNodes.forEach((node) => {
                 if (node.nodeType === Node.ELEMENT_NODE) {
-                    if (node.matches && node.matches('.chats__item')) {
-                        setTimeout(() => addRepeatButtonOptimized(node), 100);
-                    }
+                    // if (node.matches && node.matches('.chats__item')) {
+                    //     setTimeout(() => addRepeatButtonOptimized(node), 100);
+                    // }
 
                     const items = node.querySelectorAll ? node.querySelectorAll('.chats__item') : [];
                     items.forEach(item => {
@@ -501,16 +831,6 @@
                 }
             },
             "cooldown": 120,
-            "children": [
-                {
-                    "text": "还需努力",
-                    "action": {
-                        "type": "sendMsg",
-                        "params": "*还需努力哦*"
-                    },
-                    "cooldown": 120
-                }
-            ]
         },
         {
             text: "清空私信",
@@ -640,7 +960,7 @@
      *
      * */
     function sendIconTextMsg(msg, avatar, backcolor, fontcolor){
-        if (!msg || msg == null || avatar === 'null') {
+        if (!msg || msg == null || msg === 'null') {
             msg = '沐里天下第一！！！';
         }
         if (!avatar || avatar == null || avatar === 'null') {
@@ -680,10 +1000,16 @@
             return list;
         } else {
             return new Promise((resolve, reject) => {
+                let muliWb = getCurrentSuffixText();
+                if(!muliWb || muliWb == null) {
+                  muliWb = '';
+                } else {
+                  muliWb = '\n\n\n>  ' + muliWb;
+                }
                 $.ajax({
                     url: "/chat-room/send",
                     type: "POST",
-                    data: JSON.stringify({ content: msg, client: "Web/只有午安" }),
+                    data: JSON.stringify({ content: msg + muliWb, client: "Web/沐里会睡觉" + version_us }),
                     success: resolve,
                     error: reject
                 });
@@ -927,6 +1253,94 @@
         return true;
     }
 
+    // ================== 引用消息处理函数 ==================
+
+    // 提取消息的HTML内容（包括嵌套引用）
+    function extractMessageHTML(chatContent) {
+        const vditorReset = chatContent.querySelector('.vditor-reset');
+        if (!vditorReset) return null;
+
+        // 返回内部的HTML，包括嵌套的引用
+        return vditorReset.innerHTML;
+    }
+    // 解析消息
+    // 将HTML转换为Markdown格式的引用
+    function htmlToMarkdownQuote(html, currentLevel = 0) {
+        // 创建一个临时元素来解析HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+
+        // 递归处理元素
+        function processElement(element, level) {
+            let markdown = '';
+            const indent = '>'.repeat(level) + (level > 0 ? ' ' : '');
+
+            // 遍历所有子节点
+            for (let node of element.childNodes) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    // 文本节点
+                    const text = node.textContent.trim();
+                    if (text) {
+                        markdown += indent + text + '\n';
+                    }
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    // 元素节点
+                    const tagName = node.tagName.toLowerCase();
+
+                    if (tagName === 'p') {
+                        // 段落
+                        const pContent = node.textContent.trim();
+                        if (pContent) {
+                            markdown += indent + pContent + '\n';
+                        } else if(node.childNodes[0] && node.childNodes[0].tagName.toLowerCase() === 'img') {
+                            markdown += indent + node.innerHTML.trim() + '\n';
+                        }
+                    } else if (tagName === 'h5') {
+                        // 引用标题 - 提取用户名和链接
+                        const userLink = node.querySelector('a[href*="/member/"]');
+                        const backLink = node.querySelector('a[href*="cr#"]');
+
+                        let userText = '';
+                        if (userLink) {
+                            const ariaLabel = userLink.getAttribute('aria-label');
+                            userText = ariaLabel || userLink.textContent;
+                        }
+
+                        let linkText = '';
+                        if (backLink) {
+                            const href = backLink.getAttribute('href');
+                            const title = backLink.getAttribute('title') || '跳转至原消息';
+                            linkText = `[↩](${href} "${title}")`;
+                        }
+
+                        markdown += indent + `##### 引用 @${userText} ${linkText}\n`;
+                    } else if (tagName === 'blockquote') {
+                        // 引用块 - 递归处理，增加层级
+                        const blockquoteContent = processElement(node, level + 1);
+                        markdown += blockquoteContent;
+                    } else if (tagName === 'a' && node.closest('h5') === null) {
+                        // 链接（不在h5中的）
+                        const href = node.getAttribute('href');
+                        const text = node.textContent;
+                        markdown += indent + `[${text}](${href})`;
+                    } else {
+                        // 其他元素，递归处理
+                        markdown += processElement(node, level);
+                    }
+                }
+            }
+
+            // 如果不是根元素，添加空行分隔
+            if (level === 0 && markdown) {
+                markdown += '\n';
+            }
+
+            return markdown;
+        }
+
+        return processElement(tempDiv, currentLevel);
+    }
+
     // 提取消息的基本信息
     function extractMessageInfo(chatContent) {
         const chatItem = chatContent.closest('.chats__item');
@@ -963,7 +1377,8 @@
     function generateNewQuoteLayer(messageInfo, innerContent) {
         const { displayName, username, messageId } = messageInfo;
         const link = `https://fishpi.cn/cr#${messageId}`;
-        const quotedUser = displayName || username;
+        // 修改这里优先使用id还是昵称来引用
+        const quotedUser = username || displayName || username;
 
         // 将内部内容每行前面添加 "> "
         const quotedContent = innerContent
@@ -991,29 +1406,30 @@
             console.error('无法提取消息信息');
             return;
         }
+        let success = false;
 
-        if (messageInfo.messageId.startsWith('chatroom')) {
-            const chatId = messageInfo.messageId.slice(8);
-            //复读
-            ChatRoom.at(messageInfo.username, chatId, false);
-            insertAtEndOfVditorInput("");
+        // if (messageInfo.messageId.startsWith('chatroom')) {
+        //     const chatId = messageInfo.messageId.slice(8);
+        //     //引用
+        //     ChatRoom.at(messageInfo.username, chatId, false);
+        //     insertAtEndOfVditorInput("");
+        // }
+
+        // 提取消息的HTML内容
+        const messageHTML = extractMessageHTML(chatContent);
+        if (!messageHTML) {
+            console.error('无法提取消息内容');
+            return;
         }
 
-        // // 提取消息的HTML内容
-        // const messageHTML = extractMessageHTML(chatContent);
-        // if (!messageHTML) {
-        //     console.error('无法提取消息内容');
-        //     return;
-        // }
-        //
-        // // 将HTML转换为Markdown格式
-        // const markdownContent = htmlToMarkdownQuote(messageHTML);
-        //
-        // // 生成新的引用层
-        // const newQuote = generateNewQuoteLayer(messageInfo, markdownContent);
-        //
-        // // 在现有内容后插入引用，并将光标移动到最前面
-        // const success = insertAtEndOfVditorInput(newQuote);
+        // 将HTML转换为Markdown格式
+        const markdownContent = htmlToMarkdownQuote(messageHTML);
+
+        // 生成新的引用层
+        const newQuote = generateNewQuoteLayer(messageInfo, markdownContent);
+
+        // 在现有内容后插入引用，并将光标移动到最前面
+        success = insertAtEndOfVditorInput(newQuote);
 
         if (success) {
             //console.log(`已添加对 ${messageInfo.displayName || messageInfo.username} 的引用`);
@@ -1085,127 +1501,6 @@
         const inputEvent = new Event('input', { bubbles: true });
         activeInput.dispatchEvent(inputEvent);
         return true;
-    }
-
-    // ================== 消息处理函数 ==================
-    function extractMessageInfo(chatContent) {
-        const chatItem = chatContent.closest('.chats__item');
-        if (!chatItem) return null;
-
-        const messageId = chatItem.id;
-        const avatar = chatItem.querySelector('.avatar.tooltipped__user');
-        const username = avatar ? avatar.getAttribute('aria-label') : null;
-
-        let displayName = username;
-        const userNameElement = chatContent.querySelector('#userName');
-        if (userNameElement) {
-            const userSpan = userNameElement.querySelector('span');
-            if (userSpan && userSpan.textContent) {
-                const match = userSpan.textContent.match(/([^(]+)\s*\(/);
-                if (match && match[1]) {
-                    displayName = match[1].trim();
-                }
-            }
-        }
-
-        return { messageId, username, displayName };
-    }
-
-    // 提取消息的HTML内容（包括嵌套引用）
-    function extractMessageHTML(chatContent) {
-        const vditorReset = chatContent.querySelector('.vditor-reset');
-        if (!vditorReset) return null;
-
-        // 返回内部的HTML，包括嵌套的引用
-        return vditorReset.innerHTML;
-    }
-    // 解析消息
-    // 将HTML转换为Markdown格式的引用
-    function htmlToMarkdownQuote(html, currentLevel = 0) {
-        // 创建一个临时元素来解析HTML
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
-
-        // 递归处理元素
-        function processElement(element, level) {
-            let markdown = '';
-            const indent = '>'.repeat(level) + (level > 0 ? ' ' : '');
-
-            // 遍历所有子节点
-            for (let node of element.childNodes) {
-                if (node.nodeType === Node.TEXT_NODE) {
-                    // 文本节点
-                    const text = node.textContent.trim();
-                    if (text) {
-                        markdown += indent + text + '\n';
-                    }
-                } else if (node.nodeType === Node.ELEMENT_NODE) {
-                    // 元素节点
-                    const tagName = node.tagName.toLowerCase();
-
-                    if (tagName === 'p') {
-                        // 段落
-                        const pContent = node.textContent.trim();
-                        if (pContent) {
-                            markdown += indent + pContent + '\n';
-                        }
-                    } else if (tagName === 'h5') {
-                        // 引用标题 - 提取用户名和链接
-                        const userLink = node.querySelector('a[href*="/member/"]');
-                        const backLink = node.querySelector('a[href*="cr#"]');
-
-                        let userText = '';
-                        if (userLink) {
-                            const ariaLabel = userLink.getAttribute('aria-label');
-                            userText = ariaLabel || userLink.textContent;
-                        }
-
-                        let linkText = '';
-                        if (backLink) {
-                            const href = backLink.getAttribute('href');
-                            const title = backLink.getAttribute('title') || '跳转至原消息';
-                            linkText = `[↩](${href} "${title}")`;
-                        }
-
-                        markdown += indent + `##### 引用 @${userText} ${linkText}\n`;
-                    } else if (tagName === 'blockquote') {
-                        // 引用块 - 递归处理，增加层级
-                        const blockquoteContent = processElement(node, level + 1);
-                        markdown += blockquoteContent;
-                    } else if (tagName === 'a' && node.closest('h5') === null) {
-                        // 链接（不在h5中的）
-                        const href = node.getAttribute('href');
-                        const text = node.textContent;
-                        markdown += indent + `[${text}](${href})`;
-                    } else {
-                        // 其他元素，递归处理
-                        markdown += processElement(node, level);
-                    }
-                }
-            }
-
-            // 如果不是根元素，添加空行分隔
-            if (level === 0 && markdown) {
-                markdown += '\n';
-            }
-
-            return markdown;
-        }
-
-        return processElement(tempDiv, currentLevel);
-    }
-
-    function generateNewQuoteLayer(messageInfo, innerContent) {
-        const { displayName, username, messageId } = messageInfo;
-        const link = `https://fishpi.cn/cr#${messageId}`;
-        const quotedUser = displayName || username;
-
-        const quotedContent = innerContent
-            .split('\n')
-            .map(line => line.trim() === '' ? '>' : `> ${line}`)
-            .join('\n');
-
-        return `\n\n##### 引用 @${quotedUser} [↩](${link} "跳转至原消息")\n\n${quotedContent}\n`;
     }
 
 
@@ -3050,6 +3345,8 @@
 
         childForm.querySelector('.remove-child-btn').addEventListener('click', () => {
             childForm.remove();
+            //保存可视化编辑
+            collectVisualEditorData();
             if (container.children.length === 0) {
                 container.innerHTML = '<div class="no-children">暂无子按钮，点击上方按钮添加</div>';
             }
@@ -3123,6 +3420,8 @@
                 updateVisualEditor();
                 updatePreview();
                 updateJsonEditor();
+                //保存可视化编辑
+                collectVisualEditorData();
             }
         });
 
@@ -3818,6 +4117,200 @@
         activeConfig = newConfig;
         updateJsonEditor();
     }
+// ================= 小尾巴 ==================
+    // 替换原有菜单系统，添加统一的设置按钮
+    GM_registerMenuCommand("设置小尾巴", showSettingsPanel);
+
+    // 显示设置面板
+    function showSettingsPanel() {
+        const panel = createSettingsPanel();
+        panel.style.display = 'flex';
+        settingsPanelVisible = true;
+    }
+
+    // 隐藏设置面板
+    function hideSettingsPanel() {
+        const panel = document.getElementById('tail-word-settings-panel');
+        if (panel) {
+            panel.style.display = 'none';
+            settingsPanelVisible = false;
+        }
+    }
+
+    // 保存设置
+    function saveSettings() {
+        // 保存小尾巴设置
+        const suffixToggle = document.getElementById('suffix-toggle');
+        const customToggle = document.getElementById('custom-suffix-toggle');
+        const customInput = document.getElementById('custom-suffix-input');
+        const presetSelect = document.getElementById('suffix-preset-select');
+
+        suffixFlag = suffixToggle.checked;
+        window.localStorage['xwb_flag'] = suffixFlag;
+
+        if (customToggle.checked) {
+            window.localStorage['xwb_is_custom_suffix'] = 'true';
+            window.localStorage['xwb_custom_suffix'] = customInput.value.trim();
+        } else {
+            delete window.localStorage['xwb_is_custom_suffix'];
+            window.localStorage['xwb_suffix_index'] = presetSelect.value;
+        }
+
+
+
+        // 显示保存成功提示
+        showNotification('设置保存成功！', 'success');
+
+        // 更新预览
+        updateSuffixPreview();
+    }
+
+    // 更新小尾巴预览
+    function updateSuffixPreview() {
+        const previewDiv = document.getElementById('suffix-preview');
+        if (previewDiv) {
+            previewDiv.textContent = getCurrentSuffixText();
+        }
+    }
+
+    // 添加设置面板事件监听
+    function addSettingsEventListeners() {
+        // 小尾巴开关和自定义切换
+        const suffixToggle = document.getElementById('suffix-toggle');
+        const customToggle = document.getElementById('custom-suffix-toggle');
+        const customInput = document.getElementById('custom-suffix-input');
+        const presetSelect = document.getElementById('suffix-preset-select');
+
+        // 监听预览更新
+        suffixToggle.addEventListener('change', updateSuffixPreview);
+        customToggle.addEventListener('change', updateSuffixPreview);
+        customInput.addEventListener('input', updateSuffixPreview);
+        presetSelect.addEventListener('change', updateSuffixPreview);
+
+        // 风格选择
+        const styleGrid = document.getElementById('style-grid');
+        if (styleGrid) {
+            styleGrid.addEventListener('click', (e) => {
+                const styleOption = e.target;
+                if (styleOption.dataset.styleIndex !== undefined) {
+                    const styleIndex = parseInt(styleOption.dataset.styleIndex);
+
+                    // 更新选中状态
+                    Array.from(styleGrid.children).forEach(child => {
+                        child.style.boxShadow = '';
+                        child.style.transform = '';
+                    });
+                    styleOption.style.boxShadow = '0 0 0 2px #667eea';
+                    styleOption.style.transform = 'scale(1.05)';
+
+                    // 应用样式
+                    applyWordPanelStyle(styleIndex);
+                }
+            });
+        }
+    }
+
+    // 小尾巴选项数组
+    const suffixOptions = [
+        '时光清浅处，一步一安然。',
+        '心若向阳，无畏悲伤。',
+        '岁月静好，现世安稳。',
+        '人生如逆旅，我亦是行人。',
+        '胸有丘壑，眼存山河。',
+        '但行好事，莫问前程。',
+        '愿有岁月可回首，且以深情共白头。',
+        '人间烟火气，最抚凡人心。'
+    ];
+
+    // 获取当前选中的小尾巴索引
+    function getCurrentSuffixIndex() {
+        const index = parseInt(window.localStorage['xwb_suffix_index']);
+        return isNaN(index) || index < 0 || index >= suffixOptions.length ? 0 : index;
+    }
+
+    // 获取当前小尾巴文本
+    function getCurrentSuffixText() {
+        // 优先检查是否有自定义小尾巴
+        const isCustom = window.localStorage['xwb_is_custom_suffix'] === 'true';
+        const customSuffix = window.localStorage['xwb_custom_suffix'];
+
+        // 如果设置了自定义小尾巴且不为空，则返回自定义文本
+        if (isCustom && customSuffix) {
+            return customSuffix;
+        }
+
+        // 否则返回预设的小尾巴选项
+        return suffixOptions[getCurrentSuffixIndex()] || suffixOptions[0];
+    }
+
+    // 重写发送消息函数，添加小尾巴
+    ChatRoom.send = function (needwb) {
+        var wbMsg = '\n\n\n>  ' + getCurrentSuffixText();
+        var t, e;
+        ChatRoom.isSend || (ChatRoom.isSend = !0,
+            e = {
+                content: t = ChatRoom.editor.getValue(),
+            },
+            ChatRoom.editor.setValue(""),
+            $.ajax({
+                url: Label.servePath + "/chat-room/send",
+                type: "POST",
+                cache: !1,
+                data: JSON.stringify({
+                    content: function () {
+                        // 获取原始消息内容
+                        let originalContent = t;
+                        let muliWb = getCurrentSuffixText();
+                        let strOriginalContent = String(originalContent);
+                        // 复读之替换别人的小尾巴（太邪恶了）
+                        if (strOriginalContent.includes(wb_keyword)) {
+                            var wbEnd  = strOriginalContent.lastIndexOf(wb_keyword);
+                            var wbStartMsg = strOriginalContent.substring(0, wbEnd)
+                            //如果是双击引用 则改为截取最后正确的小尾巴部分
+                            if (wbStartMsg.includes(tab_keyword) && (wbStartMsg.lastIndexOf(tab_keyword) + tab_keyword.length) == wbStartMsg.length) {
+                                //探寻到引用的末端 检查是否出现两个引用层级
+                                var tabEnd = strOriginalContent.lastIndexOf(tab_keyword);
+                                var tabEndStr = strOriginalContent.substring(tabEnd + tab_keyword.length);
+                                if(tabEndStr.lastIndexOf('> ') == tabEndStr.indexOf('> ')) {
+                                    //说明是最后一个层级
+                                    // 不去除小尾巴
+                                    wbStartMsg = strOriginalContent;
+                                } else {
+                                    wbStartMsg = strOriginalContent.substring(0, strOriginalContent.lastIndexOf('> '));
+                                }
+                            }
+                            //截取原消息
+                            return wbStartMsg + '\n\n\n>  ' + muliWb;;
+                        }
+                        // 处理小尾巴和单词
+                        if (strOriginalContent.includes(muliWb)
+                            || t.trim().length == 0 || (!suffixFlag) || needwb == 0 || t.trim().startsWith('凌 ')
+                            || t.trim().startsWith('鸽 ') || t.trim().startsWith('小冰 ') || t.trim().startsWith('冰冰 ') || t.trim().startsWith('点歌 ')
+                            || t.trim().startsWith('TTS ') || t.trim().startsWith('朗读 ')) {
+                            return originalContent;
+                        } else {
+                            return originalContent + '\n\n\n>  ' + muliWb;
+                        }
+                    }(),
+                    client: "Web/沐里会睡觉" + version_us
+                }),
+                beforeSend: function () {
+                    $("#form button.red").attr("disabled", "disabled").css("opacity", "0.3")
+                },
+                success: function (e) {
+                    0 === e.code ? $("#chatContentTip").removeClass("error succ").html("") : ($("#chatContentTip").addClass("error").html("<ul><li>" + e.msg + "</li></ul>"),
+                        ChatRoom.editor.setValue(t))
+                },
+                error: function (e) {
+                    $("#chatContentTip").addClass("error").html("<ul><li>" + e.statusText + "</li></ul>"),
+                        ChatRoom.editor.setValue(t)
+                },
+                complete: function (e, t) {
+                    ChatRoom.isSend = !1,
+                        $("#form button.red").removeAttr("disabled").css("opacity", "1")
+                }
+            }))
+    };
 
     // 启动脚本
     init();
