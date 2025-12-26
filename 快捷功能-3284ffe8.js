@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         鱼派快捷功能cr1
-// @version      2.1
+// @version      2.2
 // @description  快捷操作，支持拖拽和记忆位置，支持配置编辑
 // @author       Kirito + muli + 18
 // @match        https://fishpi.cn/cr
@@ -22,6 +22,8 @@
 // 2025-12-14 trd 新增sendIconTextMsg()函数动作 用于发送图标文字
 // 2025-12-15 muli 完善图片消息动作，支持动态配置图片参数
 // 2025-12-18 muli 新增小尾巴设置（来源小梦的魔法）
+// 2025-12-19 muli 引用和复读将剥夺别人的小尾巴，前提要开启小尾巴功能
+// 2025-12-26 muli 图片消息函数引入新参数，可指定默认执行发生时的参数，优化了双击引用时，一些消息无法准确识别的问题（依旧有部分极限场景可能出现问题）
 
 (function () {
     'use strict';
@@ -42,7 +44,7 @@
     // ================== 发送个性化文字图片时的链接模板  ==================
     let iconText = "![](https://fishpi.cn/gen?ver=0.1&scale=1.5&txt=#{msg}&url=#{avatar}&backcolor=#{backcolor}&fontcolor=#{fontcolor})";
 
-    const version_us = "v2.1.0";
+    const version_us = "v2.2.0";
 
     // 小尾巴开关状态
     var suffixFlag = window.localStorage['xwb_flag'] ? JSON.parse(window.localStorage['xwb_flag']) : true;
@@ -54,6 +56,8 @@
     const wb_keyword = '\n\n> ';
     // 区别小尾巴固定关键字的引用关键字
     const tab_keyword = '\"跳转至原消息\")';
+    // 区分是否多次引用
+    const tabs_keyword = 'title=\"跳转至原消息\"';
 
     // 创建设置面板
     function createSettingsPanel() {
@@ -390,7 +394,7 @@
             },
             promptAndIconTextMsg: (params) => {
                 new Promise((resolve) => {
-                    const input = prompt('请输入：消息|头像（用户名或图片链接）|背景|字体，参数', '消息|null|null|null');
+                    const input = prompt('请输入：消息|头像（用户名或图片链接）|背景|字体，参数', params.defaultValue || '消息|null|null|null');
                     if (input === null) {
                         resolve();
                         return;
@@ -808,6 +812,18 @@
                     }
                 },
                 {
+                    text: "购买仆人",
+                    muliRefresh: true,
+                    action: {
+                        type: 'promptAndSend',
+                        params: {
+                            promptText: '输入要购买的交易列表序号',
+                            defaultValue: '',
+                            actionCode: '小斗士 购买${input}'
+                        }
+                    }
+                },
+                {
                     text: "桃",
                     action: { type: 'sendMsg', params: '小斗士 桃' },
                     muliRefresh: true
@@ -820,21 +836,47 @@
             ]
         },
         {
-            "text": "好感度",
-            "color": "btn-red",
-            "action": {
-                "type": "promptAndSend",
-                "params": {
-                    "promptText": "输入 名称,好感度",
-                    "defaultValue": "muli,100",
-                    "actionCode": "【${input}】好感度：${input}"
-                }
+            text: "图片文字",
+            color: "btn-warn",
+            action: {
+              type: 'promptAndIconTextMsg',
+              params: {
+                 defaultValue: '消息|null|null|null'
+              }
             },
-            "cooldown": 120,
+            children: [
+                {
+                    text: "紫色渐变",
+                    action: {
+                      type: 'promptAndIconTextMsg',
+                      params: {
+                         defaultValue: '消息|null|FFEDCC,EDE9FE|FB923C,8B5CF6'
+                      }
+                    }
+                },
+                {
+                    text: "橙色渐变",
+                    action: {
+                      type: 'promptAndIconTextMsg',
+                      params: {
+                         defaultValue: '消息|null|FFF7ED,FFEDD5|F97316,ffffff'
+                      }
+                    }
+                },
+                {
+                    text: "cos沐里",
+                    action: {
+                      type: 'promptAndIconTextMsg',
+                      params: {
+                         defaultValue: '消息|muli|null|null'
+                      }
+                    }
+                },
+            ]
         },
         {
             text: "清空私信",
-            color: "btn-blue",
+            color: "btn-green",
             action: {
                 type: 'fetchPrivate',
                 params: ['/chat/mark-all-as-read', '/notifications/all-read']
@@ -933,13 +975,18 @@
                     text: "谢谢",
                     action: { type: 'sendMsg', params: '# 谢谢' },
                     cooldown: 5
+                },
+                {
+                    text: "呜呜呜",
+                    action: { type: 'sendMsg', params: '# 呜呜呜' },
+                    cooldown: 5
+                },
+                {
+                    text: "沐嘿嘿嘿",
+                    action: { type: 'sendMsg', params: '### 沐嘿嘿嘿 沐嘿嘿嘿\n' + '![图片表情](https://file.fishpi.cn/2025/12/13411020365279481-cbcd485f.gif)' },
+                    cooldown: 5
                 }
             ]
-        },
-        {
-            text: "自定义ICON",
-            color: "btn-blue",
-            action: { type: 'promptAndIconTextMsg'},
         },
     ];
 
@@ -1269,14 +1316,26 @@
         // 创建一个临时元素来解析HTML
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
+        // 第一次引用
+        if (!html.includes(tabs_keyword)) {
+          var blockquotes = tempDiv.querySelectorAll('blockquote');
+          blockquotes.forEach(function(tempBlock) {
+            tempBlock.remove(); // 或者 pElement.parentNode.removeChild(pElement);
+          });
+        }
 
         // 递归处理元素
         function processElement(element, level) {
             let markdown = '';
             const indent = '>'.repeat(level) + (level > 0 ? ' ' : '');
+            let thisBlockquoteLevel  = 0;
 
             // 遍历所有子节点
             for (let node of element.childNodes) {
+                if (node.parentNode && node.parentNode.tagName && node.parentNode.tagName.toLowerCase() === 'p') {
+                    continue;
+                }
+
                 if (node.nodeType === Node.TEXT_NODE) {
                     // 文本节点
                     const text = node.textContent.trim();
@@ -1286,19 +1345,51 @@
                 } else if (node.nodeType === Node.ELEMENT_NODE) {
                     // 元素节点
                     const tagName = node.tagName.toLowerCase();
-
-                    if (tagName === 'p') {
-                        // 段落
-                        const pContent = node.textContent.trim();
-                        if (pContent) {
-                            markdown += indent + pContent + '\n';
-                        } else if(node.childNodes[0] && node.childNodes[0].tagName.toLowerCase() === 'img') {
-                            markdown += indent + node.innerHTML.trim() + '\n';
+                    if (tagName === 'img' || tagName === 'a' || tagName === 'h1' || tagName === 'h2' || tagName === 'h3' || tagName === 'h4') {
+                        markdown += indent + node.outerHTML.trim() + '\n';
+                    } else if (tagName === 'p') {
+                        if (!node.innerHTML) {
+                            continue;
                         }
+                        // 段落
+                        const pContent = node.innerHTML.trim();
+                        if(node.childNodes.length > 1) {
+                          var n = 1;
+                          node.childNodes.forEach(son_node => {
+                            if (node.childNodes.length != n) {
+                              markdown += '\n';
+                            }
+                            if(son_node.tagName && son_node.tagName.toLowerCase() === 'a') {
+                                markdown += indent + son_node.outerHTML;
+                            } else if(son_node.tagName && son_node.tagName.toLowerCase() === 'img') {
+                                markdown += indent + son_node.outerHTML + '\n';;
+                            } else if(son_node.tagName && son_node.tagName.toLowerCase() === 'br') {
+                                //markdown += indent + son_node.outerHTML;
+                            } else {
+                                markdown += indent + son_node.textContent;
+                            }
+
+                            n++;
+                          });
+                          markdown += '\n';
+                        } else {
+                          if (pContent) {
+                            markdown += indent + pContent + '\n';
+                          } else if(node.childNodes[0] && node.childNodes[0].tagName.toLowerCase() === 'img' || node.childNodes[0].tagName.toLowerCase() === 'a') {
+                              markdown += indent + node.innerHTML.trim() + '\n';
+                          }
+                        }
+
+
                     } else if (tagName === 'h5') {
                         // 引用标题 - 提取用户名和链接
                         const userLink = node.querySelector('a[href*="/member/"]');
                         const backLink = node.querySelector('a[href*="cr#"]');
+                        //非引用层
+                        if(!userLink && !backLink) {
+                          markdown += indent + node.outerHTML.trim() + '\n';
+                          continue;
+                        }
 
                         let userText = '';
                         if (userLink) {
@@ -1315,9 +1406,14 @@
 
                         markdown += indent + `##### 引用 @${userText} ${linkText}\n`;
                     } else if (tagName === 'blockquote') {
+                        if (thisBlockquoteLevel > 0) {
+                            continue;
+                        }
                         // 引用块 - 递归处理，增加层级
                         const blockquoteContent = processElement(node, level + 1);
+                        thisBlockquoteLevel++;
                         markdown += blockquoteContent;
+
                     } else if (tagName === 'a' && node.closest('h5') === null) {
                         // 链接（不在h5中的）
                         const href = node.getAttribute('href');
@@ -1339,6 +1435,27 @@
         }
 
         return processElement(tempDiv, currentLevel);
+    }
+
+    //  提取分离一个标签内的图片和文字
+    function splitImgAndText(htmlString) {
+      const dom = new JSDOM(htmlString);
+      const document = dom.window.document;
+
+      const pElement = document.querySelector('p');
+      if (!pElement) return { img: '', text: '', combined: '' };
+
+      const imgElement = pElement.querySelector('img');
+      const imgContent = imgElement ? imgElement.outerHTML : '';
+
+      // 获取文本内容（排除img标签）
+      const textContent = pElement.textContent || '';
+
+      return {
+          img: imgContent,
+          text: textContent.trim(),
+          combined: imgContent + textContent.trim()
+      };
     }
 
     // 提取消息的基本信息
@@ -1378,7 +1495,7 @@
         const { displayName, username, messageId } = messageInfo;
         const link = `https://fishpi.cn/cr#${messageId}`;
         // 修改这里优先使用id还是昵称来引用
-        const quotedUser = username || displayName || username;
+        let quotedUser = displayName || username;
 
         // 将内部内容每行前面添加 "> "
         const quotedContent = innerContent
@@ -1387,7 +1504,17 @@
             .join('\n');
 
         // 引用内容添加在现有内容的后面，并在引用前加两个空行
-        return `\n\n##### 引用 @${quotedUser} [↩](${link} "跳转至原消息")\n\n${quotedContent}\n`;
+        if (displayName && displayName == '波波') {
+          if ('bobo1024' == username) {
+            quotedUser = '小波波';
+          } else {
+            quotedUser = '大波波';
+          }
+          return `\n\n##### 引用 @${quotedUser}(${username}) [↩](${link} "跳转至原消息")\n\n${quotedContent}\n`;
+        } else {
+          return `\n\n##### 引用 @${quotedUser} [↩](${link} "跳转至原消息")\n\n${quotedContent}\n`;
+        }
+
     }
 
     // 处理双击事件
@@ -1412,7 +1539,7 @@
         //     const chatId = messageInfo.messageId.slice(8);
         //     //引用
         //     ChatRoom.at(messageInfo.username, chatId, false);
-        //     insertAtEndOfVditorInput("");
+        //     success = insertAtEndOfVditorInput("");
         // }
 
         // 提取消息的HTML内容
@@ -2761,7 +2888,7 @@
             ]
         },
         promptAndIconTextMsg: {
-            params: []
+            params: [ {name: 'defaultValue', type: 'text', label: '默认参数', placeholder: '消息|头像|背景|字体（|隔开参数，null为使用默认参数）', defaultValue: '消息|null|null|null', required: false} ]
         },
         muliRefreshPage: {
             params: [
@@ -4046,6 +4173,10 @@
                     } else {
                         buttonData.action.params = message;
                     }
+                } else if (actionType === 'promptAndIconTextMsg') {
+                    const defaultValue = form.querySelector('[name="action_defaultValue"]')?.value;
+                    buttonData.action.params = {};
+                    buttonData.action.params.defaultValue = defaultValue;
                 }
             }
 
@@ -4104,6 +4235,10 @@
                             } else {
                                 childData.action.params = message;
                             }
+                        } else if (childActionType === 'promptAndIconTextMsg') {
+                            const defaultValue = childForm.querySelector('[name="action_defaultValue"]')?.value;
+                            childData.action.params = {};
+                            childData.action.params.defaultValue = defaultValue;
                         }
                     }
 
@@ -4159,7 +4294,7 @@
 
 
         // 显示保存成功提示
-        showNotification('设置保存成功！', 'success');
+        showTemporaryHint('设置保存成功！');
 
         // 更新预览
         updateSuffixPreview();
@@ -4260,6 +4395,12 @@
                     content: function () {
                         // 获取原始消息内容
                         let originalContent = t;
+                        // 如果是鱼排的函数引用，小尾巴会出现最后引用换行的情况，因此需要特殊截取
+                        var yp_yy_index = originalContent.lastIndexOf('\n> \n>\n');
+                        if (yp_yy_index > 0 && yp_yy_index + 9 == originalContent.length) {
+                          originalContent = originalContent.substring(0, yp_yy_index);
+                        }
+
                         let muliWb = getCurrentSuffixText();
                         let strOriginalContent = String(originalContent);
                         // 复读之替换别人的小尾巴（太邪恶了）
@@ -4271,14 +4412,16 @@
                                 //探寻到引用的末端 检查是否出现两个引用层级
                                 var tabEnd = strOriginalContent.lastIndexOf(tab_keyword);
                                 var tabEndStr = strOriginalContent.substring(tabEnd + tab_keyword.length);
-                                if(tabEndStr.lastIndexOf('> ') == tabEndStr.indexOf('> ')) {
+                                if(tabEndStr.lastIndexOf('> ') == tabEndStr.indexOf('> ') || (tabEndStr.lastIndexOf('> ') == tabEndStr.lastIndexOf('> !['))) {
                                     //说明是最后一个层级
                                     // 不去除小尾巴
                                     wbStartMsg = strOriginalContent;
                                 } else {
                                     wbStartMsg = strOriginalContent.substring(0, strOriginalContent.lastIndexOf('> '));
                                 }
+                                //wbStartMsg = strOriginalContent;
                             }
+
                             //截取原消息
                             return wbStartMsg + '\n\n\n>  ' + muliWb;;
                         }
