@@ -1,0 +1,542 @@
+{
+  "version": "1.2.5",
+  "exportDate": "2025-12-29T09:44:25.138Z",
+  "fishList": [
+    {
+      "id": "miclayeo87eu3zkeajw",
+      "name": "小梦",
+      "favor": 100,
+      "notes": [
+        {
+          "timestamp": "2025/11/24 11:52:52",
+          "content": "111",
+          "timestampObj": "2025-11-24T03:52:52.767Z"
+        },
+        {
+          "timestamp": "2025/11/24 11:51:18",
+          "content": "最喜欢小梦了",
+          "timestampObj": "2025-11-24T03:51:18.000Z"
+        },
+        {
+          "timestamp": "2025/11/24 12:00:07",
+          "content": "太喜欢小梦了",
+          "timestampObj": "2025-11-24T04:00:07.377Z"
+        },
+        {
+          "timestamp": "2025/11/24 12:08:01",
+          "content": "1",
+          "timestampObj": "2025-11-24T04:08:01.807Z"
+        },
+        {
+          "timestamp": "2025/11/25 20:30:08",
+          "content": "可爱的小梦！！！",
+          "timestampObj": "2025-11-25T12:30:08.564Z"
+        },
+        {
+          "timestamp": "2025/11/26 20:29:19",
+          "content": "1",
+          "timestampObj": "2025-11-26T12:29:19.636Z",
+          "favorBefore": 100,
+          "favorChange": -1,
+          "favorAfter": 99
+        },
+        {
+          "timestamp": "2025/11/26 20:29:28",
+          "content": "1",
+          "timestampObj": "2025-11-26T12:29:28.700Z",
+          "favorBefore": 99,
+          "favorChange": 1,
+          "favorAfter": 100
+        }
+      ],
+      "createdAt": "2025-11-24T03:51:18.000Z",
+      "updatedAt": "2025-11-26T12:29:28.700Z"
+    },
+    {
+      "id": "midzb2u5xct7fxucb68",
+      "name": "沐里(muli)",
+      "favor": 60,
+      "notes": [
+        {
+          "timestamp": "2025/11/25 10:50:55",
+          "content": "富婆乖孩子抽象的沐里",
+          "timestampObj": "2025-11-25T02:50:55.901Z"
+        },
+        {
+          "timestamp": "2025/11/25 15:08:33",
+          "content": "可爱的史迪仔沐里",
+          "timestampObj": "2025-11-25T07:08:33.182Z"
+        },
+        {
+          "timestamp": "2025/11/25 14:22:00",
+          "content": "宝宝 你是一个乖宝宝",
+          "timestampObj": "2025-11-25T06:22:00.637Z"
+        },
+        {
+          "timestamp": "2025/11/27 14:52:08",
+          "content": "认知低 就喜欢在这种事上找价值感和存在感",
+          "timestampObj": "2025-11-27T06:52:08.829Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/11/27 17:17:03",
+          "content": "沐里伟大无需多言",
+          "timestampObj": "2025-11-27T09:17:03.982Z",
+          "favorChange": 10
+        },
+        {
+          "timestamp": "2025/11/28 08:58:17",
+          "content": "早小梦",
+          "timestampObj": "2025-11-28T00:58:17.222Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/11/28 17:13:01",
+          "content": "70",
+          "timestampObj": "2025-11-28T09:13:01.274Z",
+          "favorChange": 3
+        },
+        {
+          "timestamp": "2025/12/02 16:05:28",
+          "content": "谢谢你 宝宝",
+          "timestampObj": "2025-12-02T08:05:28.478Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/12/03 17:17:15",
+          "content": "复读梦",
+          "timestampObj": "2025-12-03T09:17:15.890Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/12/05 17:01:08",
+          "content": "还是小梦最正经",
+          "timestampObj": "2025-12-05T09:01:08.392Z",
+          "favorChange": 2
+        },
+        {
+          "timestamp": "2025/12/08 11:53:58",
+          "content": "小笨蛋",
+          "timestampObj": "2025-12-08T03:53:58.271Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/12/08 15:56:11",
+          "content": "好的 新来的梦梦",
+          "timestampObj": "2025-12-08T07:56:11.545Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/12/08 16:59:17",
+          "content": "想我 期待我 和我聊天",
+          "timestampObj": "2025-12-08T08:59:17.371Z",
+          "favorChange": 10
+        },
+        {
+          "timestamp": "2025/12/09 15:06:13",
+          "content": "梦宝宝进",
+          "timestampObj": "2025-12-09T07:06:13.026Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/12/10 15:46:59",
+          "content": "让小梦 emo致死 然后继承他的积分 转给我",
+          "timestampObj": "2025-12-10T07:46:59.415Z",
+          "favorChange": -1
+        },
+        {
+          "timestamp": "2025/12/11 16:27:29",
+          "content": "【小梦】好感度：516.0",
+          "timestampObj": "2025-12-11T08:27:29.436Z",
+          "favorChange": -1
+        },
+        {
+          "timestamp": "2025/12/12 11:38:44",
+          "content": "死样 喂你嘴里呗",
+          "timestampObj": "2025-12-12T03:38:44.258Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/12/12 12:00:12",
+          "content": "非常好的copy 其实小梦你可以私聊我的",
+          "timestampObj": "2025-12-12T04:00:12.974Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/12/12 14:49:52",
+          "content": "聪明小梦",
+          "timestampObj": "2025-12-12T06:49:52.516Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/12/19 17:02:36",
+          "content": "风也温柔![](https://fishpi.cn/gen?ver=0.1&scale=1.5&txt=%E9%A3%8E%E4%B9%9F%E6%B8%A9%E6%9F%94&url=https://file.fishpi.cn/2025/11/blob-4d0e46ad.png?imageView2/1/w/48/h/48/interlace/0/q/100&backcolor=9a808f,ffffff&fontcolor=ffffff,9a808f,9a808f)",
+          "timestampObj": "2025-12-19T09:02:36.264Z",
+          "favorChange": 10
+        }
+      ],
+      "createdAt": "2025-11-25T02:50:55.901Z",
+      "updatedAt": "2025-12-19T09:02:36.264Z"
+    },
+    {
+      "id": "migswk7nififwbmz6b8",
+      "name": "燕子(Salted)",
+      "favor": 26,
+      "notes": [
+        {
+          "timestamp": "2025/11/27 10:14:59",
+          "content": "88",
+          "timestampObj": "2025-11-27T02:14:59.411Z"
+        },
+        {
+          "timestamp": "2025/11/27 14:44:07",
+          "content": "抱抱",
+          "timestampObj": "2025-11-27T06:44:07.349Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/12/03 11:01:40",
+          "content": "65",
+          "timestampObj": "2025-12-03T03:01:40.416Z",
+          "favorChange": -5
+        },
+        {
+          "timestamp": "2025/12/05 10:05:51",
+          "content": "salted和ZDream03划水币交换成功,当前剩余【移花接木】卡数量:0张",
+          "timestampObj": "2025-12-05T02:05:51.952Z",
+          "favorChange": -20
+        },
+        {
+          "timestamp": "2025/12/11 19:40:53",
+          "content": "划水币乃身外之物！\n蒜鸟蒜鸟。",
+          "timestampObj": "2025-12-11T11:40:53.647Z",
+          "favorChange": 10
+        }
+      ],
+      "createdAt": "2025-11-27T02:14:59.411Z",
+      "updatedAt": "2025-12-11T11:40:53.647Z"
+    },
+    {
+      "id": "micumrz3tfd2i2fowte",
+      "name": "月月姐",
+      "favor": 25,
+      "notes": [
+        {
+          "timestamp": "2025/11/24 15:52:17",
+          "content": "有求必应，善良的月月姐",
+          "timestampObj": "2025-11-24T07:52:17.439Z"
+        }
+      ],
+      "createdAt": "2025-11-24T07:52:17.439Z",
+      "updatedAt": "2025-11-24T07:52:17.439Z"
+    },
+    {
+      "id": "mih59s19m3napzvhuz",
+      "name": "村长 (1284926)",
+      "favor": 23,
+      "notes": [
+        {
+          "timestamp": "2025/11/27 16:01:11",
+          "content": "村长 ！！！！！！！",
+          "timestampObj": "2025-11-27T08:01:11.469Z"
+        },
+        {
+          "timestamp": "2025/11/28 17:19:09",
+          "content": "梦宝宝你是个好人",
+          "timestampObj": "2025-11-28T09:19:09.802Z",
+          "favorChange": 1
+        }
+      ],
+      "createdAt": "2025-11-27T08:01:11.469Z",
+      "updatedAt": "2025-11-28T09:19:09.802Z"
+    },
+    {
+      "id": "mie6vaed3h8niqvgh4x",
+      "name": "蜡笔(Cinmmyi)",
+      "favor": 20,
+      "notes": [
+        {
+          "timestamp": "2025/11/25 14:29:43",
+          "content": "复读是对的，复读是伟大的，复读是包容的，赞美复读！",
+          "timestampObj": "2025-11-25T06:29:43.821Z"
+        },
+        {
+          "timestamp": "2025/11/25 14:22:36",
+          "content": "试试看，这是给小梦的红包吗？",
+          "timestampObj": "2025-11-25T06:22:36.133Z"
+        },
+        {
+          "timestamp": "2025/11/27 13:51:22",
+          "content": "小梦下午好",
+          "timestampObj": "2025-11-27T05:51:22.870Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/11/27 15:15:38",
+          "content": "1158",
+          "timestampObj": "2025-11-27T07:15:38.685Z",
+          "favorChange": 1
+        }
+      ],
+      "createdAt": "2025-11-25T06:22:36.133Z",
+      "updatedAt": "2025-11-27T07:15:38.686Z"
+    },
+    {
+      "id": "mips9g6jyjwipxk8sz",
+      "name": "荆芥（摸鱼帮保安队长） (jingjie)",
+      "favor": 20,
+      "notes": [
+        {
+          "timestamp": "2025/12/3 17:06:56",
+          "content": "那很棒了 继续加油 梦梦",
+          "timestampObj": "2025-12-03T09:06:56.682Z"
+        }
+      ],
+      "createdAt": "2025-12-03T09:06:56.683Z",
+      "updatedAt": "2025-12-03T09:06:56.683Z"
+    },
+    {
+      "id": "mie6fukufhntpeso8rb",
+      "name": "阿紫(Azi)",
+      "favor": 15,
+      "notes": [
+        {
+          "timestamp": "2025/11/25 14:10:35",
+          "content": "阿紫可爱捏",
+          "timestampObj": "2025-11-25T06:10:35.789Z"
+        },
+        {
+          "timestamp": "2025/11/25 14:13:06",
+          "content": "猛男azi",
+          "timestampObj": "2025-11-25T06:13:06.541Z"
+        },
+        {
+          "timestamp": "2025/11/25 17:50:24",
+          "content": "Azi💜",
+          "timestampObj": "2025-11-25T09:50:24.406Z"
+        },
+        {
+          "timestamp": "2025/11/25 17:49:35",
+          "content": "小梦无聊了给我发消息",
+          "timestampObj": "2025-11-25T09:49:35.234Z"
+        }
+      ],
+      "createdAt": "2025-11-25T06:10:35.789Z",
+      "updatedAt": "2025-11-25T09:50:24.406Z"
+    },
+    {
+      "id": "mj2hwa4a1fzgf88a889",
+      "name": "叫我摸鱼大王 (trd)",
+      "favor": 15,
+      "notes": [
+        {
+          "timestamp": "2025/12/12 14:37:46",
+          "content": "小斗士添加了 欢迎小梦的",
+          "timestampObj": "2025-12-12T06:37:46.426Z"
+        }
+      ],
+      "createdAt": "2025-12-12T06:37:46.426Z",
+      "updatedAt": "2025-12-12T06:37:46.426Z"
+    },
+    {
+      "id": "mioapg8mda77rlehtfr",
+      "name": "jojo (julismme)",
+      "favor": 11,
+      "notes": [
+        {
+          "timestamp": "2025/12/2 16:07:43",
+          "content": "谢谢喵~离彩色id又近了一步！",
+          "timestampObj": "2025-12-02T08:07:43.990Z"
+        },
+        {
+          "timestamp": "2025/12/02 16:08:46",
+          "content": "给你看小裙子",
+          "timestampObj": "2025-12-02T08:08:46.944Z",
+          "favorChange": 1
+        }
+      ],
+      "createdAt": "2025-12-02T08:07:43.990Z",
+      "updatedAt": "2025-12-02T08:08:46.944Z"
+    },
+    {
+      "id": "miecg09y0h6slqgsp98",
+      "name": "发疯图强的花花 (xiaohui0927)",
+      "favor": 10,
+      "notes": [
+        {
+          "timestamp": "2025/11/25 16:58:40",
+          "content": "早下班呜呜",
+          "timestampObj": "2025-11-25T08:58:40.870Z"
+        },
+        {
+          "timestamp": "2025/11/26 09:01:42",
+          "content": "ZDream03 梦，早",
+          "timestampObj": "2025-11-26T01:01:42.305Z"
+        },
+        {
+          "timestamp": "2025/11/26 09:22:13",
+          "content": "要对自己好一些",
+          "timestampObj": "2025-11-26T01:22:13.101Z"
+        }
+      ],
+      "createdAt": "2025-11-25T08:58:40.870Z",
+      "updatedAt": "2025-11-26T01:22:13.101Z"
+    },
+    {
+      "id": "mizpgmbz8hu9ihx8jyl",
+      "name": "lihaoCC",
+      "favor": 10,
+      "notes": [
+        {
+          "timestamp": "2025/12/10 15:46:14",
+          "content": "小梦我也抽\n\n请给CC介绍18个男大",
+          "timestampObj": "2025-12-10T07:46:14.158Z"
+        }
+      ],
+      "createdAt": "2025-12-10T07:46:14.159Z",
+      "updatedAt": "2025-12-10T07:46:14.159Z"
+    },
+    {
+      "id": "mickyr52n8vhlj17gr",
+      "name": "念(23223)",
+      "favor": 0,
+      "notes": [
+        {
+          "timestamp": "2025/11/24 12:04:59",
+          "content": "不弯腰怎么背着你我的梦梦 被恶心到了",
+          "timestampObj": "2025-11-24T04:04:59.447Z"
+        },
+        {
+          "timestamp": "2025/11/25 11:35:52",
+          "content": "念 见色忘友",
+          "timestampObj": "2025-11-25T03:35:52.117Z"
+        },
+        {
+          "timestamp": "2025/11/26 13:56:17",
+          "content": "念 哺乳灵长类动物 通常在上班出现 喜欢和野生鱼油视频 爱好不详",
+          "timestampObj": "2025-11-26T05:56:17.202Z"
+        },
+        {
+          "timestamp": "2025/11/26 16:20:07",
+          "content": "念视频看鱼油黑丝",
+          "timestampObj": "2025-11-26T08:20:07.612Z"
+        },
+        {
+          "timestamp": "2025/11/28 15:22:58",
+          "content": "我就是单纯的爱你们",
+          "timestampObj": "2025-11-28T07:22:58.905Z",
+          "favorChange": 0
+        },
+        {
+          "timestamp": "2025/11/28 16:00:18",
+          "content": "我骂你啊",
+          "timestampObj": "2025-11-28T08:00:18.801Z",
+          "favorChange": -1
+        },
+        {
+          "timestamp": "2025/11/28 16:00:27",
+          "content": "我就说说",
+          "timestampObj": "2025-11-28T08:00:27.905Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/12/01 09:45:39",
+          "content": "吊毛念！结婚话题恶心我。",
+          "timestampObj": "2025-12-01T01:45:39.976Z",
+          "favorChange": -10
+        },
+        {
+          "timestamp": "2025/12/01 18:27:00",
+          "content": "乐",
+          "timestampObj": "2025-12-01T10:27:00.931Z",
+          "favorChange": -1
+        },
+        {
+          "timestamp": "2025/12/02 12:00:42",
+          "content": "您的随从23223在外工作为您获得了64点划水币奖励",
+          "timestampObj": "2025-12-02T04:00:42.227Z",
+          "favorChange": 1
+        },
+        {
+          "timestamp": "2025/12/02 18:00:47",
+          "content": "念骗女孩子一套一套的",
+          "timestampObj": "2025-12-02T10:00:47.271Z",
+          "favorChange": -1
+        },
+        {
+          "timestamp": "2025/12/03 09:35:38",
+          "content": "谢谢念宝的520",
+          "timestampObj": "2025-12-03T01:35:38.495Z",
+          "favorChange": 10
+        },
+        {
+          "timestamp": "2025/12/05 10:04:17",
+          "content": "23223对ZDream03使用了【妙手空空】,偷取了64点划水币，其中42点来自仆从加成",
+          "timestampObj": "2025-12-05T02:04:17.214Z",
+          "favorChange": -1
+        },
+        {
+          "timestamp": "2025/12/18 18:04:25",
+          "content": "小梦就是要用来啪啪啪啪啪啊",
+          "timestampObj": "2025-12-18T10:04:25.373Z",
+          "favorChange": -13
+        }
+      ],
+      "createdAt": "2025-11-24T04:04:59.447Z",
+      "updatedAt": "2025-12-18T10:04:25.373Z"
+    },
+    {
+      "id": "mifuxylw0uhk1jwlzo8r",
+      "name": "咖啡不爱吃鱼油 (caffish)",
+      "favor": -1,
+      "notes": [
+        {
+          "timestamp": "2025/11/26 18:24:17",
+          "content": "不贴不贴 都不贴‘’",
+          "timestampObj": "2025-11-26T10:24:17.779Z"
+        },
+        {
+          "timestamp": "2025/11/26 18:25:12",
+          "content": "工资一定很高吧",
+          "timestampObj": "2025-11-26T10:25:12.715Z"
+        }
+      ],
+      "createdAt": "2025-11-26T10:24:17.779Z",
+      "updatedAt": "2025-11-26T10:25:12.715Z"
+    },
+    {
+      "id": "mifd3idffzofh7ayn5f",
+      "name": "在日落之前 (8573)",
+      "favor": -5,
+      "notes": [
+        {
+          "timestamp": "2025/11/26 10:04:43",
+          "content": "被拿捏了呜呜",
+          "timestampObj": "2025-11-26T02:04:43.586Z"
+        }
+      ],
+      "createdAt": "2025-11-26T02:04:43.586Z",
+      "updatedAt": "2025-11-26T02:04:43.586Z"
+    },
+    {
+      "id": "mimi1xyr6y0tm4lmlb7",
+      "name": "辞酒 (cijiu121)",
+      "favor": -39,
+      "notes": [
+        {
+          "timestamp": "2025/12/1 09:57:51",
+          "content": "鸽子辞酒",
+          "timestampObj": "2025-12-01T01:57:51.794Z"
+        },
+        {
+          "timestamp": "2025/12/11 16:42:40",
+          "content": "三角洲嫌弃我菜，打一把就和别人甜蜜三排去了，让我孤零零的画圈圈。",
+          "timestampObj": "2025-12-11T08:42:40.301Z",
+          "favorChange": -19
+        }
+      ],
+      "createdAt": "2025-12-01T01:57:51.794Z",
+      "updatedAt": "2025-12-11T08:42:40.301Z"
+    }
+  ]
+}
