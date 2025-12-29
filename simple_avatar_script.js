@@ -362,7 +362,7 @@
                 try {
                     const customText = prompt("请输入头像上显示的文字：", avatarConfig.defaultText);
                     const textToUse = customText === null || customText.trim() === '' ? avatarConfig.defaultText : customText.trim();
-                    const encodedText = encodeURIComponent(textToUse);
+                    const encodedText = encodeURIComponent(textToUse)+"%20";
                     // 确保头像URL被正确编码
                     const encodedBaseImageUrl = encodeURIComponent(avatarConfig.baseImageUrl);
                     // 构建头像生成URL，使用配置中的缩放比例
