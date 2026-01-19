@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.19
+// @version      1.0.20
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/cr
@@ -12,11 +12,11 @@
 // @license MIT
 
 // ==/UserScript==
-
+//ZeroDream 2026-1-19 添加multiMessage属性 用于判断是否发送多条消息
 (function () {
     'use strict';
-    const version_us = "v1.0.19";
-    // 按钮数据结构：{id, textContent, message, className , count, hidden}
+    const version_us = "v1.0.20";
+    // 按钮数据结构：{id, textContent, message, className , count, hidden, multiMessage}
     let buttonsConfig = [];
     const STORAGE_KEY = 'customButtonsConfig';
     const DEFAULT_BUTTONS = [
@@ -120,6 +120,14 @@
             buttonStatus.style.marginBottom = '4px';
             buttonStatus.textContent = '状态: ' + (button.hidden ? '隐藏' : '显示');
             buttonInfo.appendChild(buttonStatus);
+            
+            // 多条消息状态显示
+            const multiMessageStatus = document.createElement('div');
+            multiMessageStatus.style.fontSize = '12px';
+            multiMessageStatus.style.color = button.multiMessage ? '#1890ff' : '#8c8c8c';
+            multiMessageStatus.style.marginBottom = '4px';
+            multiMessageStatus.textContent = '发送: ' + (button.multiMessage ? '多条' : '单条');
+            buttonInfo.appendChild(multiMessageStatus);
             
             buttonInfo.appendChild(buttonMsg);
             
@@ -318,6 +326,21 @@ window.editButton = function(index) {
         hiddenSelectDiv.appendChild(hiddenCheckbox);
         editDialog.appendChild(hiddenSelectDiv);
         
+        // 多条消息选项
+        const multiMessageDiv = document.createElement('div');
+        multiMessageDiv.style.marginBottom = '15px';
+        const multiMessageLabel = document.createElement('label');
+        multiMessageLabel.textContent = '多条消息: ';
+        multiMessageLabel.style.display = 'inline-block';
+        multiMessageLabel.style.width = '80px';
+        const multiMessageCheckbox = document.createElement('input');
+        multiMessageCheckbox.type = 'checkbox';
+        multiMessageCheckbox.checked = button.multiMessage || false;
+        multiMessageCheckbox.style.marginTop = '5px';
+        multiMessageDiv.appendChild(multiMessageLabel);
+        multiMessageDiv.appendChild(multiMessageCheckbox);
+        editDialog.appendChild(multiMessageDiv);
+        
         // 按钮容器
         const buttonsDiv = document.createElement('div');
         buttonsDiv.style.display = 'flex';
@@ -371,7 +394,8 @@ window.editButton = function(index) {
                 message: buttonMsg,
                 className: colorSelect.value,
                 count: button.count || 0, // 保留原始点击次数，如果不存在则设为0
-                hidden: isHidden
+                hidden: isHidden,
+                multiMessage: multiMessageCheckbox.checked  // 保存多条消息设置
             };
             
             saveButtonsConfig();
@@ -435,14 +459,26 @@ window.editButton = function(index) {
             btn.setAttribute('style', 'margin-right:5px; margin-bottom:5px; padding:4px 8px; border-radius: 4px;');
             
             btn.onclick = function() {
-                // 将消息按换行符分割成多条消息，过滤掉空行
-                const messages = config.message.split('\n').filter(msg => msg.trim() !== '');
-                
-                if (messages.length > 0) {
-                    // 使用sendMessagesApi逐条发送消息
-                    sendMessagesApi(messages)
+                // 根据multiMessage设置决定发送方式
+                if (config.multiMessage) {
+                    // 多条消息：按换行符分割，逐条发送
+                    const messages = config.message.split('\n').filter(msg => msg.trim() !== '');
+                    
+                    if (messages.length > 0) {
+                        sendMessagesApi(messages)
+                            .then(() => {
+                                config.count++;
+                                saveButtonsConfig();
+                            })
+                            .catch(error => {
+                                console.error('发送消息失败:', error);
+                                showNotification('发送消息失败，请稍后重试', 'error');
+                            });
+                    }
+                } else {
+                    // 单条消息：直接发送
+                    sendMsgApi(config.message)
                         .then(() => {
-                            // 增加点击次数
                             config.count++;
                             saveButtonsConfig();
                         })
