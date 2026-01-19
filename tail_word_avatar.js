@@ -1214,16 +1214,22 @@
                         // 获取当前小尾巴文本
                         let currentSuffix = getCurrentSuffixText();
 
-                        // 处理小尾巴和单词
-                        if (t.trim().length == 0 || (!suffixFlag) || needwb == 0 || t.trim().startsWith('凌 ') || t.trim().startsWith('鸽 ') || t.trim().startsWith('小冰 ') || t.trim().startsWith('冰冰 ') || t.trim().startsWith('点歌 ') || t.trim().startsWith('TTS ') || t.trim().startsWith('朗读 ') ) {
+                        // 处理小尾巴和单词（独立控制）
+                        if (t.trim().length == 0 || needwb == 0 || t.trim().startsWith('凌 ') || t.trim().startsWith('鸽 ') || t.trim().startsWith('小冰 ') || t.trim().startsWith('冰冰 ') || t.trim().startsWith('点歌 ') || t.trim().startsWith('TTS ') || t.trim().startsWith('朗读 ') ) {
                             return originalContent;
-                        } else if (wordCount === 0 || !wordTailEnabled) {
-                            // 如果wordCount为0或单词小尾巴关闭，只添加小尾巴
+                        } else if (!suffixFlag && wordTailEnabled && wordCount > 0) {
+                            // 只添加单词，不添加小尾巴
+                            return originalContent + wordMsg;
+                        } else if (suffixFlag && (!wordTailEnabled || wordCount === 0)) {
+                            // 只添加小尾巴，不添加单词
                             return originalContent + '\n\n\n>  ' + currentSuffix;
-                        } else {
-                            // 定义包含小尾巴的wbMsg
+                        } else if (suffixFlag && wordTailEnabled && wordCount > 0) {
+                            // 都添加
                             var wbMsg = '\n\n\n>  ' + currentSuffix;
                             return originalContent + wordMsg + wbMsg;
+                        } else {
+                            // 都不添加
+                            return originalContent;
                         }
                     }(),
                     client: "Web/小梦的魔法" + version_us
