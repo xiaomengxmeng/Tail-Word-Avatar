@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         鱼派小尾巴和单词功能
 // @namespace    http://tampermonkey.net/
-// @version      1.0.12
+// @version      1.0.13
 // @description  整合小尾巴和单词功能的精简版脚本   try to thank APTX-4869!
 // @author       ZeroDream
 // @match        https://fishpi.cn/cr
@@ -10,9 +10,10 @@
 // @license MIT
 // ==/UserScript==
 // ZeroDream  2026-01-19添加单词小尾巴独立控制开关
+// ZeroDream  2026-01-21 适配的新的引用
 (function () {
     'use strict';
-    const version_us = "v1.0.12";
+    const version_us = "v1.0.13";
 
     // 小尾巴开关状态
     var suffixFlag = window.localStorage['xwb_flag'] ? JSON.parse(window.localStorage['xwb_flag']) : true;
@@ -1183,6 +1184,12 @@
                         // 获取原始消息内容
                         let originalContent = t;
                         
+                        // 新版引用处理：如果有引用数据，拼接到消息前面
+                        if (typeof ChatRoom !== 'undefined' && ChatRoom.quoteData && ChatRoom.quoteData.userName && ChatRoom.quoteData.content) {
+                            let quoteMd = ChatRoom.quoteData.content.replace(/\n/g, "\n> ");
+                            originalContent = originalContent + `\n\n##### 引用 @${ChatRoom.quoteData.userName} [↩](${Label.servePath}/cr#chatroom${ChatRoom.quoteData.messageId} "跳转至原消息")  \n> ${quoteMd}\n`;
+                        }
+                        
                         // 替换为与快捷功能相同的小尾巴处理逻辑
                         let strOriginalContent = String(originalContent);
                         // 小尾巴固定关键字
@@ -1238,12 +1245,14 @@
                     $("#form button.red").attr("disabled", "disabled").css("opacity", "0.3")
                 },
                 success: function (e) {
-                    0 === e.code ? $("#chatContentTip").removeClass("error succ").html("") : ($("#chatContentTip").addClass("error").html("<ul><li>" + e.msg + "</li></ul>"),
+                    0 === e.code ? ($("#chatContentTip").removeClass("error succ").html(""), 
+                        typeof ChatRoom !== 'undefined' && ChatRoom.cancelQuote && ChatRoom.cancelQuote()) : ($("#chatContentTip").addClass("error").html("<ul><li>" + e.msg + "</li></ul>"),
                         ChatRoom.editor.setValue(t))
                 },
                 error: function (e) {
                     $("#chatContentTip").addClass("error").html("<ul><li>" + e.statusText + "</li></ul>"),
-                        ChatRoom.editor.setValue(t)
+                        ChatRoom.editor.setValue(t),
+                        typeof ChatRoom !== 'undefined' && ChatRoom.cancelQuote && ChatRoom.cancelQuote()
                 },
                 complete: function (e, t) {
                     ChatRoom.isSend = !1,
