@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         鱼派小尾巴和单词功能
 // @namespace    http://tampermonkey.net/
-// @version      1.0.13
+// @version      1.0.14
 // @description  整合小尾巴和单词功能的精简版脚本   try to thank APTX-4869!
 // @author       ZeroDream
 // @match        https://fishpi.cn/cr
@@ -11,9 +11,10 @@
 // ==/UserScript==
 // ZeroDream  2026-01-19添加单词小尾巴独立控制开关
 // ZeroDream  2026-01-21 适配的新的引用
+// ZeroDream  2026-01-21 修复小尾巴复读时对错误移除
 (function () {
     'use strict';
-    const version_us = "v1.0.13";
+    const version_us = "v1.0.14";
 
     // 小尾巴开关状态
     var suffixFlag = window.localStorage['xwb_flag'] ? JSON.parse(window.localStorage['xwb_flag']) : true;
@@ -1215,7 +1216,11 @@
                                 }
                             }
                             //截取原消息
-                            originalContent = wbStartMsg;
+                            // 修复：如果是引用消息，保留完整内容
+                            if (!strOriginalContent.includes(tab_keyword)) {
+                                originalContent = wbStartMsg;
+                            }
+                            // 引用消息保留完整内容
                         }
                         
                         // 获取当前小尾巴文本
