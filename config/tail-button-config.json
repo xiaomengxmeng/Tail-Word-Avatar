@@ -1,13 +1,13 @@
 {
-  "version": "v1.0.19",
-  "exportDate": "2025-12-29T09:43:43.706Z",
+  "version": "v1.0.21",
+  "exportDate": "2026-01-31T09:05:06.006Z",
   "buttons": [
     {
       "id": "default-bingbing",
       "textContent": "打劫",
       "message": "冰冰 去打劫",
       "className": "blue",
-      "count": 39,
+      "count": 63,
       "hidden": false
     },
     {
@@ -15,7 +15,7 @@
       "textContent": "鸽",
       "message": "鸽 行行好吧",
       "className": "orange",
-      "count": 41,
+      "count": 72,
       "hidden": false
     },
     {
@@ -23,23 +23,26 @@
       "textContent": "积分",
       "message": "小斗士 查询积分",
       "className": "red",
-      "count": 169,
+      "count": 247,
       "hidden": false
     },
     {
       "id": "custom-button-1762997298111-999",
       "textContent": "签到",
-      "message": "小斗士 签到\n~ 签到",
       "className": "gray",
-      "count": 50,
-      "hidden": false
+      "count": 77,
+      "hidden": false,
+      "multiMessage": true,
+      "actionType": "message",
+      "message": "小斗士 签到\n~ 签到",
+      "redPacketConfig": null
     },
     {
       "id": "custom-button-1762998196512-194",
       "textContent": "桀",
       "message": "![图片表情](https://fishpi.cn/gen?scale=0.9&txt=%E6%A1%80%E6%A1%80%E6%A1%80&url=https://file.fishpi.cn/2025/07/blob-6aa9f9ef.png&backcolor=dcdcdc&fontcolor=6B238E)",
       "className": "gray",
-      "count": 45,
+      "count": 52,
       "hidden": false
     },
     {
@@ -47,7 +50,7 @@
       "textContent": "Ciallo",
       "message": "Ciallo～(∠・ω< )⌒☆ 𝑪𝒊𝒂𝒍𝒍𝒐～(∠・ω< )⌒☆ 𝓒𝓲𝓪𝓵𝓵𝓸～(∠・ω< )⌒☆ 𝐂𝐢𝐚𝐥𝐥𝐨～(∠・ω< )⌒☆ ℂ𝕚𝕒𝕝𝕝𝕠～(∠・ω< )⌒☆ 𝘊𝘪𝘢𝘭𝘭𝘰～(∠・ω< )⌒☆ 𝗖𝗶𝗮𝗹𝗹𝗼～(∠・ω< )⌒☆ 𝙲𝚒𝚊𝚕𝚕𝚘～(∠・ω< )⌒☆ ᴄɪᴀʟʟᴏ～(∠・ω< )⌒☆ 𝕮𝖎𝖆𝖑𝖑𝖔～(∠・ω< )⌒☆ ℭ𝔦𝔞𝔩𝔩𝔬～(∠・ω< )⌒☆ ᶜⁱᵃˡˡᵒ～(∠・ω< )⌒☆ ᑕ⫯Ꭿ𝘭𝘭𝖮～(∠・ω< )⌒☆ ☆⌒( >ω・∠)～ollɐıɔ",
       "className": "orange",
-      "count": 51,
+      "count": 63,
       "hidden": false
     },
     {
@@ -55,7 +58,7 @@
       "textContent": "发言",
       "message": "小斗士 我的发言数",
       "className": "red",
-      "count": 74,
+      "count": 98,
       "hidden": false
     },
     {
@@ -63,7 +66,7 @@
       "textContent": "桃",
       "message": "小斗士 桃",
       "className": "red",
-      "count": 67,
+      "count": 107,
       "hidden": false
     },
     {
@@ -79,7 +82,7 @@
       "textContent": "酒桶",
       "message": "/ 来一杯",
       "className": "red",
-      "count": 183,
+      "count": 204,
       "hidden": false
     },
     {
@@ -87,7 +90,7 @@
       "textContent": "桀",
       "message": "![](https://fishpi.cn/gen?ver=0.1&scale=1&txt=%E6%A1%80%E6%A1%80%E6%A1%80&url=https%3A%2F%2Ffile.fishpi.cn%2F2025%2F12%2Fblob-0ba3d2b5.png&backcolor=E0F2FE,ECFEFF&fontcolor=3B82F6,0EA5E9 \"小梦啦 桀桀桀\")",
       "className": "green",
-      "count": 113,
+      "count": 135,
       "hidden": false
     },
     {
@@ -95,7 +98,7 @@
       "textContent": "颗秒",
       "message": "![图片表情](https://fishpi.cn/gen?ver=0.1&scale=0.79&txt=%E9%A2%97%E7%A7%92&url=https%3A%2F%2Ffile.fishpi.cn%2F2025%2F11%2Fblob-d5ddf9d5.png&backcolor=EDE9FE,DBEAFE&fontcolor=8B5CF6,60A5FA)",
       "className": "red",
-      "count": 54,
+      "count": 58,
       "hidden": false
     },
     {
@@ -103,7 +106,7 @@
       "textContent": "包",
       "message": "冰冰 来个红包",
       "className": "red",
-      "count": 144,
+      "count": 229,
       "hidden": false
     },
     {
@@ -119,7 +122,7 @@
       "textContent": "muli",
       "message": "muli~ muli muli~ mu~li ~ 哇擦 灵感菇 灵感 ~ 菇~",
       "className": "red",
-      "count": 19,
+      "count": 23,
       "hidden": false
     },
     {
@@ -143,23 +146,26 @@
       "textContent": "烟花",
       "message": "~ 烟花雨",
       "className": "red",
-      "count": 199,
+      "count": 355,
       "hidden": false
     },
     {
       "id": "custom-button-1764897605366-120",
       "textContent": "榜单",
-      "message": "小斗士 今日三甲\n小斗士 查询划水币排行榜\n小斗士 查询负分排行榜\n小斗士 查询被偷榜\n小斗士 查询神偷榜\n小斗士 查询神医榜",
       "className": "red",
-      "count": 18,
-      "hidden": false
+      "count": 47,
+      "hidden": false,
+      "multiMessage": true,
+      "actionType": "message",
+      "message": "小斗士 今日三甲\n小斗士 查询划水币排行榜\n小斗士 查询负分排行榜\n小斗士 查询被偷榜\n小斗士 查询神偷榜\n小斗士 查询神医榜",
+      "redPacketConfig": null
     },
     {
       "id": "custom-button-1765886403997-839",
       "textContent": "呜",
       "message": "![图片表情](https://fishpi.cn/gen?ver=0.1&scale=1&txt=%E5%91%9C%E5%91%9C%E5%91%9C&url=https%3A%2F%2Ffile.fishpi.cn%2F2025%2F12%2Fblob-0ba3d2b5.png&backcolor=F9F0FF,FFD6E7&fontcolor=92400E,ffffff)",
       "className": "red",
-      "count": 9,
+      "count": 15,
       "hidden": false
     },
     {
@@ -175,7 +181,7 @@
       "textContent": "嘿",
       "message": "![图片表情](https://fishpi.cn/gen?ver=0.1&scale=1.5&txt=%E6%B2%90%E5%98%BF%E5%98%BF%E5%98%BF+%E6%B2%90%E5%98%BF%E5%98%BF%E5%98%BF&url=https://file.fishpi.cn/2025/11/blob-4d0e46ad.png?imageView2/1/w/48/h/48/interlace/0/q/100&backcolor=9a808f,ffffff&fontcolor=ffffff,9a808f,9a808f)",
       "className": "red",
-      "count": 13,
+      "count": 23,
       "hidden": false
     },
     {
@@ -183,15 +189,15 @@
       "textContent": "sad",
       "message": "![图片表情](https://fishpi.cn/gen?ver=0.1&scale=1&txt=SAD%20&url=https%3A%2F%2Ffile.fishpi.cn%2F2025%2F12%2Fblob-95ec2451.png&backcolor=FFEDCC,EDE9FE&fontcolor=FB923C,8B5CF6)",
       "className": "red",
-      "count": 6,
-      "hidden": false
+      "count": 10,
+      "hidden": true
     },
     {
       "id": "custom-button-1766711730740-776",
       "textContent": "税",
       "message": "![图片表情](https://fishpi.cn/gen?ver=0.1&scale=1&txt=%E4%BA%A4%E7%A8%8E&url=https%3A%2F%2Ffile.fishpi.cn%2F2025%2F12%2Fblob-95ec2451.png&backcolor=FFEDCC,EDE9FE&fontcolor=FB923C,8B5CF6)",
       "className": "red",
-      "count": 1,
+      "count": 18,
       "hidden": false
     },
     {
@@ -199,7 +205,7 @@
       "textContent": "happy",
       "message": "![图片表情](https://fishpi.cn/gen?ver=0.1&scale=1&txt=HAPPY%20&url=https%3A%2F%2Ffile.fishpi.cn%2F2025%2F12%2Fblob-95ec2451.png&backcolor=FFEDCC,EDE9FE&fontcolor=FB923C,8B5CF6)",
       "className": "red",
-      "count": 8,
+      "count": 25,
       "hidden": false
     },
     {
@@ -207,7 +213,7 @@
       "textContent": "暗影小姐",
       "message": "宇宙最强最潮流最美最牛超级无敌邪魅嗜血究极狂暴螺旋升天帅暗影小姐",
       "className": "red",
-      "count": 2,
+      "count": 13,
       "hidden": false
     },
     {
@@ -215,8 +221,283 @@
       "textContent": "复制",
       "message": "[复制怎么了，复制你缺胳膊少腿儿了，人家脚本就是有这个功能，可以复制。你们有吗，你就是有不用的话，那是你的问题，不想看排里面的消息吗，那就不要在排里待着天天在里面干嘛呢啊，只有人复制你才出来，看一看。不复制你就不看吗，就复制](https://fishpi.cn/member/muli/breezemoons/1766997572586)",
       "className": "green",
-      "count": 0,
+      "count": 23,
       "hidden": false
+    },
+    {
+      "id": "custom-button-1767693337422-668",
+      "textContent": "领养",
+      "message": "[个人原因养不起自己了 无偿出 可爱人类，血统稳定 父母都是人类，已经成年 瞳孔和毛发颜色非常正统 四肢健全，会自主呼吸 下雨会跑回家 会玩儿智能手机 能够独立上厕所 有一点掉毛，略挑食 希望有爱心的富人领养](https://fishpi.cn/member/ZDream03/breezemoons/1763781193939)",
+      "className": "red",
+      "count": 25,
+      "hidden": false
+    },
+    {
+      "id": "custom-button-1767748140909-540",
+      "textContent": "不懂",
+      "message": "[我有重度焦虑症🖤重度狂躁症🖤我会黑化🖤格式化🖤…我有99个人格🥀……💧总有人说黑化🖤是中二💔💔💔可他们不知道……黑化🖤其实是一个人最后的挣扎……小时候喜欢白天…………长大了喜欢黑夜🌙💔小时候喜欢粉色……长大了喜欢黑色🥀我喜欢💘天使💕却变成恶魔💔🖤现在的女生……表面上疯疯癫癫的……🥀💧💔实际上是八嘎呀路呀😡你懂吗？你根本不懂！！！💔](https://fishpi.cn/member/muli/breezemoons/1767748047135)",
+      "className": "blue",
+      "count": 8,
+      "hidden": false
+    },
+    {
+      "id": "custom-button-1767778461922-18",
+      "textContent": "sad",
+      "message": "![图片表情](https://fishpi.cn/gen?ver=0.1&scale=1&txt=SAD+&url=https%3A%2F%2Ffile.fishpi.cn%2F2026%2F01%2Fblob-ea5932ff.png&backcolor=F8FAFC,E5E7EB&fontcolor=9CA3AF,ffffff)",
+      "className": "gray",
+      "count": 52,
+      "hidden": false
+    },
+    {
+      "id": "custom-button-1767779169692-904",
+      "textContent": "happy",
+      "message": "![图片表情](https://fishpi.cn/gen?ver=0.1&scale=1&txt=HAPPY+&url=https%3A%2F%2Ffile.fishpi.cn%2F2026%2F01%2Fblob-ea5932ff.png&backcolor=F8FAFC,E5E7EB&fontcolor=9CA3AF,ffffff)",
+      "className": "gray",
+      "count": 2,
+      "hidden": true
+    },
+    {
+      "id": "custom-button-1767845407783-33",
+      "textContent": "不如意",
+      "message": "人生不如意 摸鱼还被欺",
+      "className": "red",
+      "count": 17,
+      "hidden": false
+    },
+    {
+      "id": "custom-button-1767865672589-145",
+      "textContent": "鱼排",
+      "message": "鱼排\n\n网恋＝群里勾搭 添加好友 日常聊骚 暧昧不断 互发照片 确定关系 线下见面 翻云覆雨 翻云覆雨 翻云覆雨 翻云覆雨 翻云覆雨 关系破裂 互删好友 双双退群\n🔞男男有别，安分守己！\n🔞偷尝禁果，万万不可！\n🔞一经发现，严惩不贷！\n严禁添加好友进行私聊等不法行为❗\n网络对象都是虚拟和未知的❗\n网络不是不法之地，请爱护自己的身体❗\n好兄弟你记住，拉你一把的是兄弟，拉你两把的是父母，拉你几把的是男同",
+      "className": "orange",
+      "count": 4,
+      "hidden": false
+    },
+    {
+      "id": "custom-button-1767924430952-307",
+      "textContent": "s",
+      "message": "![图片表情](https://file.fishpi.cn/2026/01/image-1d1e7892.png)",
+      "className": "red",
+      "count": 14,
+      "hidden": false
+    },
+    {
+      "id": "custom-button-1768822769099-630",
+      "textContent": "来一拳",
+      "className": "blue",
+      "count": 46,
+      "hidden": true,
+      "multiMessage": false,
+      "actionType": "redPacket",
+      "message": "",
+      "redPacketConfig": {
+        "type": "猜拳红包",
+        "money": "",
+        "count": "1",
+        "msg": "",
+        "recivers": [
+          ""
+        ],
+        "gesture": "无"
+      }
+    },
+    {
+      "id": "custom-button-1768822805203-594",
+      "textContent": "Only For You",
+      "className": "red",
+      "count": 59,
+      "hidden": false,
+      "multiMessage": false,
+      "actionType": "redPacket",
+      "message": "",
+      "redPacketConfig": {
+        "type": "专属红包",
+        "money": "",
+        "count": "1",
+        "msg": "Only For You",
+        "recivers": [
+          ""
+        ],
+        "gesture": "无"
+      }
+    },
+    {
+      "id": "custom-button-1768823180771-69",
+      "textContent": "普通",
+      "className": "red",
+      "count": 89,
+      "hidden": true,
+      "multiMessage": false,
+      "actionType": "redPacket",
+      "message": "",
+      "redPacketConfig": {
+        "type": "普通红包",
+        "money": "32",
+        "count": "1",
+        "msg": "",
+        "recivers": [
+          ""
+        ],
+        "gesture": "无"
+      }
+    },
+    {
+      "id": "custom-button-1768823205818-380",
+      "textContent": "手气",
+      "className": "red",
+      "count": 25,
+      "hidden": true,
+      "multiMessage": false,
+      "actionType": "redPacket",
+      "message": "",
+      "redPacketConfig": {
+        "type": "拼手气红包",
+        "money": "",
+        "count": "5",
+        "msg": "",
+        "recivers": [
+          ""
+        ],
+        "gesture": "无"
+      }
+    },
+    {
+      "id": "custom-button-1768872966647-10",
+      "textContent": "Liya",
+      "className": "red",
+      "count": 9,
+      "hidden": false,
+      "multiMessage": false,
+      "actionType": "message",
+      "message": "liya ！！！！！！(尖叫到处乱跑)",
+      "redPacketConfig": null
+    },
+    {
+      "id": "custom-button-1768872983166-332",
+      "textContent": "muli",
+      "className": "red",
+      "count": 5,
+      "hidden": false,
+      "multiMessage": false,
+      "actionType": "message",
+      "message": "muli ！！！！！！(尖叫到处乱跑)",
+      "redPacketConfig": null
+    },
+    {
+      "id": "custom-button-1769053506425-820",
+      "textContent": "来一拳",
+      "className": "red",
+      "count": 81,
+      "hidden": false,
+      "multiMessage": false,
+      "actionType": "redPacket",
+      "message": "",
+      "redPacketConfig": {
+        "type": "猜拳红包",
+        "money": "256",
+        "count": "1",
+        "msg": "吃小梦一拳",
+        "recivers": [
+          ""
+        ],
+        "gesture": "无"
+      }
+    },
+    {
+      "id": "custom-button-1769160334800-258",
+      "textContent": "EMO",
+      "className": "red",
+      "count": 4,
+      "hidden": false,
+      "multiMessage": false,
+      "actionType": "message",
+      "message": "![图片表情](https://fishpi.cn/gen?ver=0.1&scale=1&txt=EMO+&url=https%3A%2F%2Ffile.fishpi.cn%2F2026%2F01%2Fblob-ea5932ff.png&backcolor=F8FAFC,E5E7EB&fontcolor=9CA3AF,ffffff)",
+      "redPacketConfig": null
+    },
+    {
+      "id": "custom-button-1769407111459-771",
+      "textContent": "~ 金牛座",
+      "className": "red",
+      "count": 9,
+      "hidden": false,
+      "multiMessage": false,
+      "actionType": "message",
+      "message": "~ 金牛座",
+      "redPacketConfig": null
+    },
+    {
+      "id": "custom-button-1769413547231-256",
+      "textContent": "256-10",
+      "className": "red",
+      "count": 3,
+      "hidden": true,
+      "multiMessage": false,
+      "actionType": "redPacket",
+      "message": "",
+      "redPacketConfig": {
+        "type": "拼手气红包",
+        "money": "256",
+        "count": "15",
+        "msg": "",
+        "recivers": [
+          ""
+        ],
+        "gesture": "无"
+      }
+    },
+    {
+      "id": "custom-button-1769678155720-783",
+      "textContent": "输赢",
+      "className": "red",
+      "count": 8,
+      "hidden": false,
+      "multiMessage": false,
+      "actionType": "message",
+      "message": "### 有人输就有人赢，有人SAD就有人HAPPY",
+      "redPacketConfig": null
+    },
+    {
+      "id": "custom-button-1769736104698-926",
+      "textContent": "划水币排行榜",
+      "className": "red",
+      "count": 12,
+      "hidden": false,
+      "multiMessage": false,
+      "actionType": "message",
+      "message": "小斗士 查询划水币排行榜",
+      "redPacketConfig": null
+    },
+    {
+      "id": "custom-button-1769743688357-105",
+      "textContent": "复制",
+      "className": "red",
+      "count": 1,
+      "hidden": false,
+      "multiMessage": false,
+      "actionType": "message",
+      "message": "你的意思是我复制的吗？好啊，在你心里我就是这样一个虚伪的人对吗？你根本不懂我！我亲手打出的字你居然这样说！你可以说我，但你不可以说我打的字呀！！这个世界上就没有人懂我！！我想，或许我消失了就最好吧。根本没有人在乎我！我能怎么办？看到你37℃的手指打出这样冷冰冰的字，我能有什么办法？这些字就像一把把刀子插入我的胸口。现在我已经死去了，至少我的灵魂已经死了！",
+      "redPacketConfig": null
+    },
+    {
+      "id": "custom-button-1769828702802-583",
+      "textContent": "桀桀桀",
+      "className": "blue",
+      "count": 2,
+      "hidden": false,
+      "multiMessage": false,
+      "actionType": "message",
+      "message": "![图片表情](https://fishpi.cn/gen?ver=0.1&scale=1&txt=%E6%A1%80%E6%A1%80%E6%A1%80+&url=https%3A%2F%2Ffile.fishpi.cn%2F2026%2F01%2Fblob-369f96bb.png&backcolor=E0F2FE,ECFEFF&fontcolor=3B82F6,0EA5E9)",
+      "redPacketConfig": null
+    },
+    {
+      "id": "custom-button-1769845418036-950",
+      "textContent": "宇宙级白猫",
+      "className": "red",
+      "count": 1,
+      "hidden": false,
+      "multiMessage": false,
+      "actionType": "message",
+      "message": "宇宙最强最潮流最美最牛超级无敌邪魅嗜血究极狂暴螺旋升天帅顶流炸场颜霸拽姐嗜血冷魅次元顶流逆天颜值宇宙顶奢潮范纯白战猫噬星裂空斩月破穹万神臣服万界独尊银瞳傲世利爪焚风堕天灭域狂啸九天龙魂附体次元乱杀颜值封神潮流天花板战力天花板暗黑魅魔纯白战尊星核主宰瞬杀万物傲睨苍穹绝艳惊世魅惑三界狂拽炸场嗜血狂尊次元破壁者星河踏碎者颜值统治者潮流定义者纯白魅影战猫之王白猫小姐",
+      "redPacketConfig": null
     }
   ]
 }

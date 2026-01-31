@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.21
+// @version      1.0.22
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/cr
@@ -15,10 +15,11 @@
 //ZeroDream 2026-1-19 添加multiMessage属性 用于判断是否发送多条消息
 //ZeroDream 2026-1-20 add 红包功能参考muliMessage
 //ZeroDream 2026-1-31 修复保存红包类型消息错误bug
+//ZeroDream 2026-1-31 移除导入验证
 
 (function () {
     'use strict';
-    const version_us = "v1.0.21";
+    const version_us = "v1.0.22";
     // 按钮数据结构：{id, textContent, message, className, count, hidden, multiMessage, actionType, redPacketConfig}
     // actionType: 'message' (发送消息) | 'redPacket' (发送红包)
     // redPacketConfig: {type, money, count, msg, recivers, gesture} (仅红包类型使用)
@@ -1129,15 +1130,15 @@ window.editButton = function(index) {
                             return;
                         }
                         
-                        // 验证按钮数据结构
-                        const isValid = importData.buttons.every(button => 
-                            button.id && button.textContent && button.message && button.className
-                        );
+                        // // 验证按钮数据结构
+                        // const isValid = importData.buttons.every(button => 
+                        //     button.id && button.textContent && button.message && button.className
+                        // );
                         
-                        if (!isValid) {
-                            showNotification('导入文件数据不完整', 'error');
-                            return;
-                        }
+                        // if (!isValid) {
+                        //     showNotification('导入文件数据不完整', 'error');
+                        //     return;
+                        // }
                         
                         // 更新按钮配置
                         buttonsConfig = importData.buttons;
