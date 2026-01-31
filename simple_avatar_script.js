@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         头像生成脚本
 // @namespace    http://tampermonkey.net/
-// @version      1.0.17
+// @version      1.0.18
 // @description  仅头像生成按钮的脚本
 // @match        https://fishpi.cn/cr
 // @icon         https://fishpi.cn/images/favicon.png
@@ -11,10 +11,10 @@
 // @author       ZeroDream
 // @license MIT
 // ==/UserScript==
-
+//ZeroDream 2026-1-31 添加根据用户名获取用户头像URL功能
 (function () {
     'use strict';
-    const version_us = '1.0.17';
+    const version_us = '1.0.18';
     // 预设的颜色组合
     const presetColorCombinations = [
         { name: '优雅紫色', backgroundColor: 'ffffff,E8D5FF', fontColor: '9933CC,ffffff' },
@@ -143,6 +143,61 @@
             }
         } catch (e) {
             console.error('获取用户头像URL失败:', e);
+        }
+        return null;
+    }
+    
+    // 根据用户名获取头像URL
+    function getAvatarUrlByUsername(username) {
+        try {
+            // 尝试多种选择器来查找用户头像
+            const selectors = [
+                `#comments div[aria-label="${username}"]`,
+                `.avatar.tooltipped__user[aria-label="${username}"]`,
+                `.avatar-small[aria-label="${username}"]`,
+                `div[aria-label="${username}"].avatar`
+            ];
+            
+            let avatarElement = null;
+            // 尝试每个选择器直到找到头像元素
+            for (const selector of selectors) {
+                avatarElement = document.querySelector(selector);
+                if (avatarElement && avatarElement.style.backgroundImage) {
+                    break;
+                }
+            }
+            
+            // 如果找到了有backgroundImage的元素
+            if (avatarElement && avatarElement.style.backgroundImage) {
+                // 从backgroundImage中提取URL
+                const backgroundImage = avatarElement.style.backgroundImage;
+                // 匹配URL部分，考虑单引号和双引号
+                const urlMatch = backgroundImage.match(/url\(['"](.+?)['"]\)/);
+                if (urlMatch && urlMatch[1]) {
+                    // 移除可能的参数部分，保留原始图片URL
+                    let cleanUrl = urlMatch[1];
+                    // 如果URL包含imageView2参数，则移除
+                    const paramIndex = cleanUrl.indexOf('?imageView2');
+                    if (paramIndex !== -1) {
+                        cleanUrl = cleanUrl.substring(0, paramIndex);
+                    }
+                    console.log(`成功获取用户 ${username} 的头像URL:`, cleanUrl);
+                    return cleanUrl;
+                }
+            } else {
+                console.log(`未找到用户 ${username} 的头像元素`);
+                // 输出所有找到的元素进行调试
+                selectors.forEach(selector => {
+                    const el = document.querySelector(selector);
+                    if (el) {
+                        console.log(`找到元素 ${selector}:`, el, 'backgroundImage:', el.style.backgroundImage);
+                    } else {
+                        console.log(`未找到元素 ${selector}`);
+                    }
+                });
+            }
+        } catch (e) {
+            console.error(`获取用户 ${username} 的头像URL失败:`, e);
         }
         return null;
     }
@@ -603,6 +658,22 @@
         }
     }
     
+    // 根据用户名设置头像URL
+    function setAvatarUrlByUsername() {
+        const username = prompt('请输入用户名：');
+        if (username !== null && username.trim() !== '') {
+            const trimmedUsername = username.trim();
+            const avatarUrl = getAvatarUrlByUsername(trimmedUsername);
+            if (avatarUrl) {
+                avatarConfig.baseImageUrl = avatarUrl;
+                saveConfig(avatarConfig);
+                alert(`已成功设置用户 ${trimmedUsername} 的头像URL！`);
+            } else {
+                alert(`未能找到用户 ${trimmedUsername} 的头像，请确保该用户在当前页面有发言或头像显示。`);
+            }
+        }
+    }
+    
     // 设置头像缩放比例
     function setAvatarScale() {
         // 创建面板容器
@@ -881,6 +952,7 @@
     
     // 注册油猴菜单
     GM_registerMenuCommand('设置头像背景URL', setAvatarUrl);
+    GM_registerMenuCommand('根据用户名设置头像URL', setAvatarUrlByUsername);
     GM_registerMenuCommand('选择头像颜色组合', createColorSelectionPanel);
     GM_registerMenuCommand('设置头像大小', setAvatarScale);
     GM_registerMenuCommand('重置为我的鱼排头像', resetToUserAvatar);
