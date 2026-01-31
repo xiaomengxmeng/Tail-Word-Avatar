@@ -13,7 +13,9 @@
 
 // ==/UserScript==
 //ZeroDream 2026-1-19 添加multiMessage属性 用于判断是否发送多条消息
-//ZeroDream 2026-1-20 add 红包功能参考muli
+//ZeroDream 2026-1-20 add 红包功能参考muliMessage
+//ZeroDream 2026-1-31 修复保存红包类型消息错误bug
+
 (function () {
     'use strict';
     const version_us = "v1.0.21";
@@ -614,7 +616,7 @@ window.editButton = function(index) {
                     type: typeSelect.value,
                     money: moneyInput.value.trim(),
                     count: countInput.value,
-                    msg: msgInput.value.trim(),
+                    msg: redPacketMsgInput.value.trim(),
                     recivers: reciversInput.value.trim() ? [reciversInput.value.trim()] : [""],
                     gesture: gestureSelect.value
                 };
