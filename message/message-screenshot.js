@@ -3,12 +3,15 @@
 // @namespace    https://fishpi.cn
 // @version      1.0.0
 // @description  为摸鱼派聊天室消息添加截图功能，支持截取消息并保存为图片
-// @author       Assistant
+// @author       ZeroDream
 // @match        https://fishpi.cn/cr
+// @icon         https://fishpi.cn/images/favicon.png
 // @grant        none
 // @run-at       document-end
+// @license MIT
 // ==/UserScript==
-
+// ZDream03 2026-2-2 添加截图功能
+// ZDream03 2026-2-3 修改截图按钮位置，处理所有消息
 (function() {
     'use strict';
 
@@ -80,10 +83,20 @@
         
         messageItems.forEach(messageItem => {
             const messageId = messageItem.id;
-            if (processedMessages.has(messageId)) return;
             
-            processMessageMenu(messageItem);
-            processedMessages.add(messageId);
+            // 检查是否已有截图按钮，如果没有则处理
+            const dateBar = messageItem.querySelector('.ft__smaller.ft__fade.fn__right.date-bar');
+            if (dateBar) {
+                const detailsMenu = dateBar.querySelector('details');
+                if (detailsMenu && !detailsMenu.querySelector('.screenshot-menu-item')) {
+                    addScreenshotMenuItem(detailsMenu, messageItem);
+                    processedMessages.add(messageId);
+                } else if (!detailsMenu) {
+                    // 如果没有菜单，创建并添加
+                    processMessageMenu(messageItem);
+                    processedMessages.add(messageId);
+                }
+            }
         });
     }
 
@@ -136,26 +149,15 @@
 
     // 添加截图菜单项
     function addScreenshotMenuItem(detailsMenu, messageItem) {
-        const menuContent = detailsMenu.querySelector('.menu-content') || createMenuContent(detailsMenu);
+        // 查找现有的 details-menu 元素
+        const detailsMenuContainer = detailsMenu.querySelector('details-menu');
         
-        const screenshotItem = document.createElement('div');
-        screenshotItem.className = 'screenshot-menu-item';
+        const screenshotItem = document.createElement('a');
+        screenshotItem.className = 'screenshot-menu-item item';
         screenshotItem.style.cssText = `
-            padding: 6px 12px;
             cursor: pointer;
-            font-size: 12px;
-            color: #333;
-            transition: background-color 0.2s;
         `;
         screenshotItem.textContent = '截图';
-        
-        // 添加悬停效果
-        screenshotItem.addEventListener('mouseenter', () => {
-            screenshotItem.style.backgroundColor = '#f5f5f5';
-        });
-        screenshotItem.addEventListener('mouseleave', () => {
-            screenshotItem.style.backgroundColor = 'transparent';
-        });
         
         // 添加点击事件
         screenshotItem.addEventListener('click', (e) => {
@@ -164,7 +166,13 @@
             detailsMenu.removeAttribute('open');
         });
         
-        menuContent.appendChild(screenshotItem);
+        // 如果有 details-menu，添加到其中，否则创建 menu-content
+        if (detailsMenuContainer) {
+            detailsMenuContainer.appendChild(screenshotItem);
+        } else {
+            const menuContent = detailsMenu.querySelector('.menu-content') || createMenuContent(detailsMenu);
+            menuContent.appendChild(screenshotItem);
+        }
     }
 
     // 创建菜单内容容器
