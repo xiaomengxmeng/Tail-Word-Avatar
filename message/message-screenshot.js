@@ -11,7 +11,7 @@
 // @license MIT
 // ==/UserScript==
 // ZDream03 2026-2-2 添加截图功能
-// ZDream03 2026-2-3 修改截图按钮位置，处理所有消息
+// ZDream03 2026-2-3 修改截图按钮位置，处理所有消息 添加文件名自动复制到剪切板
 (function() {
     'use strict';
 
@@ -252,6 +252,7 @@
             
             // 配置HTML2Canvas
             const options = {
+                dpi: 300, // 解决生产图片模糊
                 scale: CONFIG.screenshotScale,
                 useCORS: true,
                 allowTaint: true,
@@ -274,6 +275,17 @@
                 
                 // 生成文件名
                 const filename = generateScreenshotFilename(messageItem);
+                
+                // 自动复制文件名到剪贴板
+                copyToClipboard(filename)
+                    .then(() => {
+                        console.log('文件名已复制到剪贴板:', filename);
+                        showFeedback('文件名已复制到剪贴板', 'success');
+                    })
+                    .catch(err => {
+                        console.error('复制文件名失败:', err);
+                        // 复制失败不影响截图显示
+                    });
                 
                 // 直接显示手动保存对话框
                 showCanvasForManualSave(canvas, filename);
@@ -572,21 +584,15 @@
         `;
         copyBtn.addEventListener('click', async () => {
             try {
-                await navigator.clipboard.writeText(filename);
+                await copyToClipboard(filename);
                 copyBtn.textContent = '✅ 已复制';
+                showFeedback('文件名已复制到剪贴板', 'success');
                 setTimeout(() => {
                     copyBtn.textContent = '📋 复制';
                 }, 2000);
             } catch (err) {
                 console.error('复制失败:', err);
-                // 降级方案：使用传统的复制方法
-                const textArea = document.createElement('textarea');
-                textArea.value = filename;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                copyBtn.textContent = '✅ 已复制';
+                copyBtn.textContent = '❌ 复制失败';
                 setTimeout(() => {
                     copyBtn.textContent = '📋 复制';
                 }, 2000);
@@ -649,6 +655,57 @@
         document.body.appendChild(modal);
         
         showFeedback('截图已生成，请手动保存', 'info');
+    }
+
+    // 复制文本到剪贴板
+    function copyToClipboard(text) {
+        return new Promise((resolve, reject) => {
+            // 尝试使用现代 Clipboard API
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        resolve();
+                    })
+                    .catch(err => {
+                        console.error('Clipboard API 复制失败:', err);
+                        // 降级到传统方法
+                        tryLegacyCopy(text, resolve, reject);
+                    });
+            } else {
+                // 使用传统方法
+                tryLegacyCopy(text, resolve, reject);
+            }
+        });
+    }
+    
+    // 传统复制方法（降级方案）
+    function tryLegacyCopy(text, resolve, reject) {
+        try {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            
+            // 设置样式使其不可见
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            
+            // 选择文本并复制
+            textArea.focus();
+            textArea.select();
+            
+            const success = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            if (success) {
+                resolve();
+            } else {
+                reject(new Error('传统复制方法失败'));
+            }
+        } catch (err) {
+            console.error('传统复制方法出错:', err);
+            reject(err);
+        }
     }
 
     // 显示反馈信息
