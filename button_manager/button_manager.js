@@ -905,15 +905,6 @@ window.editButton = function(index) {
             const savedConfig = await cloudStorage.getItem(STORAGE_KEY);
             if (savedConfig) {
                 buttonsConfig = JSON.parse(savedConfig);
-                // 确保每个按钮都有count和hidden属性
-                buttonsConfig.forEach(button => {
-                    if (!button.hasOwnProperty('count')) {
-                        button.count = 0;
-                    }
-                    if (!button.hasOwnProperty('hidden')) {
-                        button.hidden = false;
-                    }
-                });
                 console.log('已从云端加载保存的按钮配置:', buttonsConfig);
             } else {
                 // 云端没有配置，尝试从本地存储加载
@@ -1171,15 +1162,7 @@ window.editButton = function(index) {
                         // 更新按钮配置
                         buttonsConfig = importData.buttons;
                         
-                        // 确保每个按钮都有count和hidden属性
-                        buttonsConfig.forEach(button => {
-                            if (!button.hasOwnProperty('count')) {
-                                button.count = 0;
-                            }
-                            if (!button.hasOwnProperty('hidden')) {
-                                button.hidden = false;
-                            }
-                        });
+
                         
                         // 保存并更新UI
                         await saveButtonsConfig();
