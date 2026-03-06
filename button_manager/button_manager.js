@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         按钮管理面板
 // @namespace    http://tampermonkey.net/
-// @version      1.0.22
+// @version      1.0.23
 // @description  管理聊天按钮的添加、编辑、删除和保存
 // @author       ZeroDream
 // @match        https://fishpi.cn/cr
@@ -16,10 +16,11 @@
 //ZeroDream 2026-1-20 add 红包功能参考muliMessage
 //ZeroDream 2026-1-31 修复保存红包类型消息错误bug
 //ZeroDream 2026-1-31 移除导入验证
+//ZeroDream 2026-3-6  添加云存储功能支持
 
 (function () {
     'use strict';
-    const version_us = "v1.0.22";
+    const version_us = "v1.0.23";
     // 按钮数据结构：{id, textContent, message, className, count, hidden, multiMessage, actionType, redPacketConfig}
     // actionType: 'message' (发送消息) | 'redPacket' (发送红包)
     // redPacketConfig: {type, money, count, msg, recivers, gesture} (仅红包类型使用)
@@ -233,17 +234,17 @@
                 deleteBtn.style.transform = 'translateY(0)';
             });
             
-            deleteBtn.onclick = function() {
+            deleteBtn.onclick = async function() {
                 if (confirm('确定要删除按钮「' + button.textContent + '」吗？')) {
                     // 从配置中删除
                     buttonsConfig.splice(index, 1);
-                    saveButtonsConfig();
+                    await saveButtonsConfig();
                     
                     // 重新创建按钮
                     createButtons();
                     
                     // 更新管理面板
-                    updateButtonsList();
+                    window.updateButtonsList();
                     
                     // 显示成功提示
                     showNotification('按钮删除成功！');
@@ -579,7 +580,7 @@ window.editButton = function(index) {
             font-size: 14px;
         `;
         
-        saveBtn.onclick = function() {
+        saveBtn.onclick = async function() {
             const buttonText = textInput.value.trim();
             const buttonMsg = msgInput.value.trim();
             const isHidden = hiddenCheckbox.checked;
@@ -626,7 +627,7 @@ window.editButton = function(index) {
             // 更新按钮配置
             buttonsConfig[index] = newConfig;
             
-            saveButtonsConfig();
+            await saveButtonsConfig();
             
             // 重新创建按钮
             createButtons();
@@ -686,14 +687,14 @@ window.editButton = function(index) {
             btn.className = config.className || 'red';
             btn.setAttribute('style', 'margin-right:5px; margin-bottom:5px; padding:4px 8px; border-radius: 4px;');
             
-            btn.onclick = function() {
+            btn.onclick = async function() {
                 // 根据 actionType 决定发送类型
                 if (config.actionType === 'redPacket') {
                     // 发送红包
                     if (config.redPacketConfig) {
                         sendRedPacketMsg(config.redPacketConfig);
                         config.count++;
-                        saveButtonsConfig();
+                        await saveButtonsConfig();
                     }
                 } else {
                     // 普通消息发送
@@ -701,26 +702,24 @@ window.editButton = function(index) {
                         const messages = config.message.split('\n').filter(msg => msg.trim() !== '');
                         
                         if (messages.length > 0) {
-                            sendMessagesApi(messages)
-                                .then(() => {
-                                    config.count++;
-                                    saveButtonsConfig();
-                                })
-                                .catch(error => {
-                                    console.error('发送消息失败:', error);
-                                    showNotification('发送消息失败，请稍后重试', 'error');
-                                });
-                        }
-                    } else {
-                        sendMsgApi(config.message)
-                            .then(() => {
+                            try {
+                                await sendMessagesApi(messages);
                                 config.count++;
-                                saveButtonsConfig();
-                            })
-                            .catch(error => {
+                                await saveButtonsConfig();
+                            } catch (error) {
                                 console.error('发送消息失败:', error);
                                 showNotification('发送消息失败，请稍后重试', 'error');
-                            });
+                            }
+                        }
+                    } else {
+                        try {
+                            await sendMsgApi(config.message);
+                            config.count++;
+                            await saveButtonsConfig();
+                        } catch (error) {
+                            console.error('发送消息失败:', error);
+                            showNotification('发送消息失败，请稍后重试', 'error');
+                        }
                     }
                 }
             };
@@ -900,10 +899,10 @@ window.editButton = function(index) {
         });
     }
     
-    // 从localStorage加载按钮配置
-    function loadButtonsConfig() {
+    // 从cloudStorage加载按钮配置，如果失败则回退到localStorage
+    async function loadButtonsConfig() {
         try {
-            const savedConfig = localStorage.getItem(STORAGE_KEY);
+            const savedConfig = await cloudStorage.getItem(STORAGE_KEY);
             if (savedConfig) {
                 buttonsConfig = JSON.parse(savedConfig);
                 // 确保每个按钮都有count和hidden属性
@@ -915,27 +914,56 @@ window.editButton = function(index) {
                         button.hidden = false;
                     }
                 });
-                console.log('已加载保存的按钮配置:', buttonsConfig);
+                console.log('已从云端加载保存的按钮配置:', buttonsConfig);
             } else {
-                // 使用默认按钮配置
-                buttonsConfig = DEFAULT_BUTTONS;
-                saveButtonsConfig();
-                console.log('使用默认按钮配置');
+                // 云端没有配置，尝试从本地存储加载
+                const localConfig = localStorage.getItem(STORAGE_KEY);
+                if (localConfig) {
+                    buttonsConfig = JSON.parse(localConfig);
+                    console.log('已从本地加载保存的按钮配置:', buttonsConfig);
+                } else {
+                    // 使用默认按钮配置
+                    buttonsConfig = DEFAULT_BUTTONS;
+                    await saveButtonsConfig();
+                    console.log('使用默认按钮配置');
+                }
             }
         } catch (e) {
-            console.error('加载按钮配置失败:', e);
-            buttonsConfig = DEFAULT_BUTTONS;
+            console.error('从云端加载按钮配置失败:', e);
+            // 回退到localStorage
+            try {
+                const localConfig = localStorage.getItem(STORAGE_KEY);
+                if (localConfig) {
+                    buttonsConfig = JSON.parse(localConfig);
+                    console.log('已从本地加载保存的按钮配置:', buttonsConfig);
+                } else {
+                    buttonsConfig = DEFAULT_BUTTONS;
+                    console.log('使用默认按钮配置');
+                }
+            } catch (localError) {
+                console.error('从本地加载按钮配置也失败:', localError);
+                buttonsConfig = DEFAULT_BUTTONS;
+            }
         }
     }
     
-    // 保存按钮配置到localStorage
-    function saveButtonsConfig() {
+    // 保存按钮配置到cloudStorage，如果失败则回退到localStorage
+    async function saveButtonsConfig() {
         try {
+            await cloudStorage.setItem(STORAGE_KEY, JSON.stringify(buttonsConfig));
+            console.log('按钮配置已保存到云端');
+            // 同时保存到本地作为备份
             localStorage.setItem(STORAGE_KEY, JSON.stringify(buttonsConfig));
-            console.log('按钮配置已保存');
         } catch (e) {
-            console.error('保存按钮配置失败:', e);
-            alert('保存按钮配置失败，请重试');
+            console.error('保存按钮配置到云端失败:', e);
+            // 回退到localStorage
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(buttonsConfig));
+                console.log('按钮配置已保存到本地');
+            } catch (localError) {
+                console.error('保存按钮配置到本地也失败:', localError);
+                alert('保存按钮配置失败，请重试');
+            }
         }
     }
     
@@ -1116,12 +1144,12 @@ window.editButton = function(index) {
             input.type = 'file';
             input.accept = '.json';
             
-            input.onchange = function(e) {
+            input.onchange = async function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
                 
                 const reader = new FileReader();
-                reader.onload = function(event) {
+                reader.onload = async function(event) {
                     try {
                         const importData = JSON.parse(event.target.result);
                         
@@ -1154,11 +1182,11 @@ window.editButton = function(index) {
                         });
                         
                         // 保存并更新UI
-                        saveButtonsConfig();
+                        await saveButtonsConfig();
                         createButtons();
                         // 如果管理面板已打开，更新列表
                         if (document.getElementById('buttons-manager-panel')) {
-                            updateButtonsList();
+                            window.updateButtonsList();
                         }
                         
                         showNotification('配置导入成功！', 'success');
@@ -1740,7 +1768,7 @@ window.editButton = function(index) {
             addBtn.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)';
         });
         
-        addBtn.addEventListener('click', function() {
+        addBtn.addEventListener('click', async function() {
             const buttonText = textInput.value.trim();
             const buttonMsg = msgInput.value.trim();
             const isHidden = hiddenCheckbox.checked;
@@ -1786,13 +1814,13 @@ window.editButton = function(index) {
             
             // 添加到配置并保存
             buttonsConfig.push(newButton);
-            saveButtonsConfig();
+            await saveButtonsConfig();
             
             // 重新创建按钮
             createButtons();
             
             // 更新管理面板
-            updateButtonsList();
+            window.updateButtonsList();
             
             // 清空输入框
             textInput.value = '';
@@ -1949,7 +1977,7 @@ window.editButton = function(index) {
         document.body.appendChild(panel);
         
         // 更新按钮列表
-        updateButtonsList();
+        window.updateButtonsList();
         
         // 实现面板拖动功能
         let isDragging = false;
@@ -2043,9 +2071,9 @@ window.editButton = function(index) {
     }
     
     // 初始化函数
-    function init() {
+    async function init() {
         // 加载按钮配置
-        loadButtonsConfig();
+        await loadButtonsConfig();
         
         // 创建按钮
         createButtons();
@@ -2126,9 +2154,13 @@ window.editButton = function(index) {
     
     // 当页面加载完成时初始化
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', async () => {
+            await init();
+        });
     } else {
-        init();
+        (async () => {
+            await init();
+        })();
     }
 })();
 // 添加按钮颜色样式
